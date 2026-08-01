@@ -3,6 +3,7 @@ import { createCanvas } from './engine/canvas.js';
 import { Game } from './engine/game.js';
 import { input } from './engine/input.js';
 import { audio } from './engine/audio.js';
+import { initTouch } from './engine/touch.js';
 import { TitleScene } from './scenes/titleScene.js';
 import { LevelSelectScene } from './scenes/levelSelectScene.js';
 import { CharacterSelectScene } from './scenes/characterSelectScene.js';
@@ -12,7 +13,9 @@ import { DefeatScene } from './scenes/defeatScene.js';
 
 const { ctx } = createCanvas();
 input.attach(window);
+initTouch(); // shows on-screen controls on phones/tablets (?touch=1 to force)
 window.addEventListener('keydown', () => audio.ensure(), { passive: true });
+window.addEventListener('pointerdown', () => audio.ensure(), { passive: true });
 
 const game = new Game(ctx);
 game.register('title', new TitleScene());

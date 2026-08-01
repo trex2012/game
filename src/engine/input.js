@@ -30,19 +30,29 @@ class Input {
     target.addEventListener('keydown', (e) => {
       if (ALL_CODES.has(e.code)) e.preventDefault();
       if (e.repeat) return;
-      this.held.add(e.code);
-      for (const [action, codes] of Object.entries(MAP)) {
-        if (codes.includes(e.code)) this.edges.add(action);
-      }
-      for (const dir of ['left', 'right']) {
-        if (MAP[dir].includes(e.code)) {
-          if (this.now - this.lastTap[dir] < DOUBLE_TAP_WINDOW) this.doubleTaps.add(dir);
-          this.lastTap[dir] = this.now;
-        }
-      }
+      this.simKeyDown(e.code);
     });
-    target.addEventListener('keyup', (e) => this.held.delete(e.code));
+    target.addEventListener('keyup', (e) => this.simKeyUp(e.code));
     target.addEventListener('blur', () => this.held.clear());
+  }
+
+  // Also used by the touch overlay to synthesize presses.
+  simKeyDown(code) {
+    if (this.held.has(code)) return;
+    this.held.add(code);
+    for (const [action, codes] of Object.entries(MAP)) {
+      if (codes.includes(code)) this.edges.add(action);
+    }
+    for (const dir of ['left', 'right']) {
+      if (MAP[dir].includes(code)) {
+        if (this.now - this.lastTap[dir] < DOUBLE_TAP_WINDOW) this.doubleTaps.add(dir);
+        this.lastTap[dir] = this.now;
+      }
+    }
+  }
+
+  simKeyUp(code) {
+    this.held.delete(code);
   }
 
   down(action) {

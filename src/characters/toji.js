@@ -28,7 +28,7 @@ export default {
       const stage = f.mem.chain ?? 0;
       f.mem.chain = (stage + 1) % 3;
       if (stage < 2) {
-        ctx.melee({ damage: 9, w: 54, h: 50, kx: 180, ky: 100, hitstun: 0.22, bypass: true });
+        ctx.melee({ damage: 9, w: 68, h: 50, kx: 180, ky: 100, hitstun: 0.22, bypass: true });
         effects.slash(f.cx, f.cy - 16, f.cx + f.facing * 56, f.cy + 8, '#aab2bd');
       } else {
         ctx.melee({ damage: 11, w: 150, h: 46, ox: 80, kx: 300, ky: 60, hitstun: 0.35, bypass: true, pullTo: true });
@@ -50,12 +50,13 @@ export default {
     desc: 'Lunging stab that dispels barriers and buffs — the Limitless killer.',
     onUse(ctx) {
       const f = ctx.f;
+      const startX = f.cx; // the stab covers the entire lunge path — no blinking away
       ctx.dash(200, 0.25);
       ctx.schedule(0.16, () => {
         if (!f.alive) return;
         f.attackT = 0.2;
         ctx.melee({
-          damage: 45, w: 70, h: 36, ox: 42, kx: 340, ky: 180, hitstun: 0.55,
+          damage: 45, w: 230, h: 46, fixedX: startX + f.facing * 115, kx: 340, ky: 180, hitstun: 0.55,
           bypass: true, tag: 'super',
           onHitTarget: (t) => {
             t.dispel();
