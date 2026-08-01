@@ -1,6 +1,26 @@
 import { jumpVelForHeight, dist } from '../engine/utils.js';
-import { GRAVITY } from '../engine/constants.js';
+import { GRAVITY, W, H } from '../engine/constants.js';
 import { effects } from '../engine/effects.js';
+
+// Domain: vacuum every opposing lesser curse into storage. Strength is
+// irrelevant inside his territory — but bosses are beyond curse manipulation.
+function devourAll(ctx) {
+  const f = ctx.f;
+  f.mem.stored ??= [];
+  let took = 0;
+  for (const e of [...ctx.enemies()]) {
+    if (!e.minionTier) continue;          // bosses resist
+    if (e.simpleDomainT > 0) continue;    // Simple Domain resists
+    e.absorbed = true;
+    e.alive = false;
+    ctx.world.onFighterDeath(e, null, { silent: true });
+    f.mem.stored.push({ def: e.def, name: e.def.name });
+    effects.burst(e.cx, e.cy, '#2a2733', 12, { speed: 180 });
+    effects.slash(e.cx, e.cy, f.cx, f.cy - 10, '#8e6bb8');
+    took++;
+  }
+  if (took > 0) effects.toast(`DEVOURED ${took} CURSE${took > 1 ? 'S' : ''} (${f.mem.stored.length} STORED)`);
+}
 
 export default {
   id: 'geto',
@@ -106,6 +126,49 @@ export default {
         ctx.world.camera?.shake(7, 0.3);
       });
       if (n === 0) effects.toast('UZUMAKI (NO CURSES STORED — WEAK)');
+    },
+  },
+
+  domain: {
+    name: 'Sea of Ten Thousand Curses',
+    rank: 2,
+    duration: 6,
+    color: '#8e6bb8',
+    desc: 'Every lesser curse in the arena is ripped into his storage, no matter how strong. Bosses resist.',
+    onStart(ctx) {
+      ctx.mem.acc = 0;
+      devourAll(ctx);
+    },
+    onTick(ctx, dt) {
+      // anything that dares spawn inside the sea gets swallowed too
+      ctx.mem.acc += dt;
+      if (ctx.mem.acc >= 0.5) {
+        ctx.mem.acc -= 0.5;
+        devourAll(ctx);
+      }
+    },
+    drawOverlay(ctx2d) {
+      ctx2d.fillStyle = 'rgba(58,38,88,0.35)';
+      ctx2d.fillRect(0, 0, W, H);
+      // curse eyes spiraling in toward the center
+      const t = performance.now() / 1000;
+      for (let i = 0; i < 14; i++) {
+        const prog = ((t * 0.22 + i / 14) % 1);
+        const r = (1 - prog) * 420 + 30;
+        const a = t * 1.5 + i * 2.4;
+        const x = W / 2 + Math.cos(a) * r;
+        const y = H / 2 + Math.sin(a) * r * 0.55;
+        ctx2d.globalAlpha = 0.35 + prog * 0.45;
+        ctx2d.fillStyle = '#8e6bb8';
+        ctx2d.beginPath();
+        ctx2d.arc(x, y, 5 + prog * 4, 0, Math.PI * 2);
+        ctx2d.fill();
+        ctx2d.fillStyle = '#fff';
+        ctx2d.beginPath();
+        ctx2d.arc(x + 2, y - 1, 1.8, 0, Math.PI * 2);
+        ctx2d.fill();
+      }
+      ctx2d.globalAlpha = 1;
     },
   },
 

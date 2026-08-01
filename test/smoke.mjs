@@ -142,6 +142,29 @@ console.log('— Mahito: 3 basic hits transfigure a curse; store, carry, and thr
   ok(boss.hp < hpBefore, `toss projectile damages the boss (${hpBefore - boss.hp} dmg)`);
 }
 
+console.log('— Geto domain: devours every curse regardless of strength, not bosses —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.geto, 200, 300);
+  w.addFighter(p);
+  const brute = new AIFighter(MINIONS.brute, 500, 250, 'enemy', { brain: 'minion' }); // 90 HP — normal absorb can't take it
+  const wisp2 = new AIFighter(MINIONS.wisp, 600, 300, 'enemy', { brain: 'minion' });
+  const boss = new AIFighter(byId.allmight, 700, 300, 'enemy', { brain: 'boss', difficulty: difficultyFor(5) });
+  boss.control = () => {};
+  w.addFighter(brute); w.addFighter(wisp2); w.addFighter(boss);
+  step(w, 0.3);
+  p.domainCharge = 100;
+  prep(p);
+  p.pressDomain();
+  ok(w.activeDomain?.owner === p, 'Sea of Ten Thousand Curses opens');
+  step(w, 0.2);
+  ok(!brute.alive && !wisp2.alive, 'full-strength brute and wisp both devoured');
+  ok((p.mem.stored ?? []).length === 2, `both curses in storage (${(p.mem.stored ?? []).length})`);
+  ok(boss.alive && boss.hp === boss.maxHp, 'boss is completely unaffected');
+  step(w, 7);
+  ok(!w.activeDomain, 'domain expires cleanly');
+}
+
 console.log('— Mahito: civilians wander, panic, and transfigure —');
 {
   const w = makeWorld();
