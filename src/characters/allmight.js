@@ -53,9 +53,28 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Carolina Smash',
+    cost: 25,
+    cooldown: 6,
+    desc: 'Cross-armed X strike — and the Symbol of Peace shrugs off blows for 2s after.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.melee({ damage: 20, w: 76, h: 56, ox: 44, kx: 300, ky: 200, hitstun: 0.45, tag: 'super' });
+      f.mem.carolinaT = 2;
+      effects.slash(f.cx, f.cy - 26, f.cx + f.facing * 78, f.cy + 18, '#fff8dc');
+      effects.slash(f.cx, f.cy + 18, f.cx + f.facing * 78, f.cy - 26, '#fff8dc');
+    },
+  },
+
   hooks: {
+    onIncomingHit(ctx, hit) {
+      if ((ctx.f.mem.carolinaT ?? 0) > 0) hit.damage *= 0.6; // braced stance
+      return true;
+    },
     onUpdate(ctx, dt) {
       const f = ctx.f;
+      f.mem.carolinaT = Math.max(0, (f.mem.carolinaT ?? 0) - dt);
       const strong = f.hp >= f.maxHp * 0.5;
       f.kbOutMult = strong ? 1.2 : 1;
       if (!strong) ctx.buffSpeed(0.9, 0.15); // deflated form is slower

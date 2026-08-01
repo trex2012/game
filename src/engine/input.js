@@ -9,6 +9,7 @@ const MAP = {
   super: ['KeyK', 'KeyX'],
   special: ['KeyL', 'KeyC'],
   domain: ['KeyR'],
+  ultra: ['KeyH'],
   pause: ['Escape', 'KeyP'],
   confirm: ['Enter', 'Space', 'KeyJ', 'KeyZ'],
   back: ['Escape', 'Backspace'],

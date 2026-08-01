@@ -78,7 +78,7 @@ export class TitleScene extends Scene {
     drawPortrait(ctx, byId.yuji, 0, 470, 1.6, this.t + 2);
     ctx.restore();
 
-    drawText(ctx, 'MOVE: WASD/ARROWS   JUMP: SPACE   BASIC: J/Z   SUPER: K/X   SPECIAL: L/C   DOMAIN: R', W / 2, H - 16, {
+    drawText(ctx, 'MOVE: WASD/ARROWS   JUMP: SPACE   BASIC: J/Z   SUPER: K/X   SPECIAL: L/C   ULTRA: H   DOMAIN: R', W / 2, H - 16, {
       size: 11, color: 'rgba(255,255,255,0.6)', align: 'center',
     });
     effects.drawScreen(ctx);

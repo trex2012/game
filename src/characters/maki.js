@@ -60,6 +60,25 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Split Soul Katana',
+    cost: 25,
+    cooldown: 7,
+    desc: 'A blade that cuts the soul directly — bonus damage to healthy targets.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.melee({
+        damage: 12, w: 96, h: 46, ox: 56, kx: 240, ky: 140, hitstun: 0.4, tag: 'super',
+        onHitTarget: (t) => {
+          const soulCut = Math.max(1, Math.round(t.hp * 0.12));
+          t.receiveHit({ damage: soulCut, kx: 0, ky: 0, hitstun: 0, isMelee: false, soul: true, tag: 'super' }, f, ctx.world);
+          effects.slash(t.cx - 30, t.cy - 30, t.cx + 30, t.cy + 30, '#c8e8ff');
+        },
+      });
+      effects.slash(f.cx, f.cy - 24, f.cx + f.facing * 100, f.cy + 12, '#c8e8ff');
+    },
+  },
+
   hooks: {
     onUpdate(ctx) {
       const f = ctx.f;

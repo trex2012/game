@@ -73,7 +73,31 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Projection Overdrive',
+    cost: 30,
+    cooldown: 10,
+    desc: '3 seconds at 24 frames — massive speed, blink resets instantly.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.buffSpeed(1.6, 3);
+      f.mem.blinkCd = 0;
+      f.mem.overdriveT = 3;
+      effects.flash(0.06, '#d8bd7f');
+      effects.ghost({ x: f.x, y: f.y, w: f.w, h: f.h, color: '#d8bd7f' });
+      if (f === ctx.world.player) effects.toast('24 FRAMES PER SECOND');
+    },
+  },
+
   hooks: {
+    onUpdate(ctx, dt) {
+      const f = ctx.f;
+      if ((f.mem.overdriveT ?? 0) > 0) {
+        f.mem.overdriveT -= dt;
+        f.mem.blinkCd = 0; // blinks never cool down while overdriven
+        if (Math.random() < 0.3) effects.ghost({ x: f.x, y: f.y, w: f.w, h: f.h, color: '#d8bd7f' });
+      }
+    },
     onHurt(ctx) {
       // getting clipped locks Projection Sorcery briefly (frame rule broken)
       const f = ctx.f;

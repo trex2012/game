@@ -1,8 +1,58 @@
 import { jumpVelForHeight, dist } from '../engine/utils.js';
 import { GRAVITY, W, H } from '../engine/constants.js';
 import { effects } from '../engine/effects.js';
+import { Fighter } from '../entities/fighter.js';
 
 const STACKS_TO_TRANSFIGURE = 3;
+const WALL_CAP = 2;
+
+// A wall of fused transfigured bodies. Blocks enemies (it registers a
+// passTeam solid), Mahito's team walks straight through. Breakable.
+const WALL_DEF = {
+  id: 'tf-wall',
+  name: 'Transfigured Wall',
+  stats: { maxHp: 130, speed: 0, jumpVel: 0, weight: 'colossal' },
+  size: { w: 30, h: 100 },
+  immunities: ['frozen', 'stun', 'slow'],
+  basic: { cooldown: 1, onUse() {} },
+  hooks: {
+    onUpdate(ctx) {
+      const f = ctx.f;
+      if (f.solidRect) {
+        f.solidRect.x = f.x;
+        f.solidRect.y = f.y;
+      }
+    },
+  },
+  draw(ctx2d, f) {
+    const c = (col) => (f.flash > 0 ? '#fff' : col);
+    ctx2d.save();
+    ctx2d.translate(f.cx, f.y);
+    ctx2d.fillStyle = c('#7d8ca3');
+    ctx2d.beginPath();
+    ctx2d.roundRect(-15, 0, 30, f.h, 8);
+    ctx2d.fill();
+    // fused bodies: lumps, stitches, and unblinking eyes
+    ctx2d.fillStyle = c('#8f9db3');
+    for (let i = 0; i < 4; i++) {
+      ctx2d.beginPath();
+      ctx2d.arc(((i % 2) * 2 - 1) * 7, 16 + i * 24, 8, 0, Math.PI * 2);
+      ctx2d.fill();
+    }
+    ctx2d.strokeStyle = c('#4a5468');
+    ctx2d.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      ctx2d.beginPath();
+      ctx2d.moveTo(-10, 30 + i * 26);
+      ctx2d.lineTo(10, 34 + i * 26);
+      ctx2d.stroke();
+    }
+    ctx2d.fillStyle = c('#2f3444');
+    ctx2d.fillRect(-6, 22, 3, 3);
+    ctx2d.fillRect(4, 62, 3, 3);
+    ctx2d.restore();
+  },
+};
 
 function convertTarget(ctx, target) {
   const f = ctx.f;
@@ -108,6 +158,32 @@ export default {
         },
       });
       if (f === ctx.world.player) effects.toast(`THREW ${rec.name.toUpperCase()} (${f.mem.stored.length} LEFT)`);
+    },
+  },
+
+  // H — raise a wall of fused transfigured bodies (consumes a stored soul)
+  ultra: {
+    name: 'Transfigured Wall',
+    cooldown: 1,
+    desc: 'Consume a stored soul: a durable flesh wall that blocks enemies — you pass through freely.',
+    onUse(ctx) {
+      const f = ctx.f;
+      f.mem.stored ??= [];
+      if (f.mem.stored.length === 0) {
+        ctx.toast('NEED A STORED SOUL TO BUILD A WALL');
+        return;
+      }
+      // oldest wall crumbles when over the cap
+      const walls = ctx.world.fighters.filter((e) => e.alive && e.def === WALL_DEF && e.team === f.team);
+      if (walls.length >= WALL_CAP) walls[0].die(ctx.world, null);
+      f.mem.stored.shift();
+      const wx = f.cx + f.facing * 64 - WALL_DEF.size.w / 2;
+      const wall = new Fighter(WALL_DEF, wx, f.y + f.h - WALL_DEF.size.h, f.team);
+      ctx.world.addFighter(wall);
+      wall.solidRect = { x: wall.x, y: wall.y, w: wall.w, h: wall.h, passTeam: f.team };
+      ctx.world.level.solids.push(wall.solidRect);
+      effects.burst(wall.cx, wall.cy, ['#7d8ca3', '#4aa3df'], 16, { speed: 200 });
+      effects.ring(wall.cx, wall.cy, '#7d8ca3', 60, 0.35);
     },
   },
 

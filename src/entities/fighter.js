@@ -26,7 +26,7 @@ export class Fighter extends Entity {
     this.hp = this.maxHp;
     this.energy = 0;
     this.domainCharge = 0;
-    this.cooldowns = { basic: 0, super: 0, special: 0 };
+    this.cooldowns = { basic: 0, super: 0, special: 0, ultra: 0 };
     this.statuses = {};
     this.buffs = {};
     this.mem = {};
@@ -118,7 +118,8 @@ export class Fighter extends Entity {
   }
 
   gainDomain(amount) {
-    this.domainCharge = clamp(this.domainCharge + amount, 0, DOMAIN_MAX);
+    const levelMult = this.world?.level?.domainChargeMult ?? 1; // Curse Nest: 3x
+    this.domainCharge = clamp(this.domainCharge + amount * levelMult, 0, DOMAIN_MAX);
   }
 
   // ---- statuses --------------------------------------------------------
@@ -232,6 +233,23 @@ export class Fighter extends Entity {
     if (this.powerStolenT > 0) return false;
     this.cooldowns.special = this.def.special.cooldown ?? 0.3;
     this.def.special.onUse(this.ctx);
+    return true;
+  }
+
+  // H key — every character's signature tech move.
+  tryUltra() {
+    if (!this.def.ultra || !this.canAct() || this.cooldowns.ultra > 0) return false;
+    if (this.powerStolenT > 0) return false;
+    const cost = this.def.ultra.cost ?? 0;
+    if (cost > 0 && this.energy < cost) {
+      if (this === this.world?.player) effects.toast('NOT ENOUGH ENERGY');
+      return false;
+    }
+    this.energy -= cost;
+    this.cooldowns.ultra = this.def.ultra.cooldown ?? 1;
+    this.attackT = 0.3;
+    audio.say(this.def.ultra.name, this.def.id, { interrupt: false });
+    this.def.ultra.onUse(this.ctx);
     return true;
   }
 

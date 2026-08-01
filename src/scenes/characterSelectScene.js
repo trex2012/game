@@ -107,8 +107,7 @@ export class CharacterSelectScene extends Scene {
       210, 450,
       { size: 12, color: def.domain ? '#c58fff' : 'rgba(255,255,255,0.55)' },
     );
-    const extra = def.moves?.[1];
-    if (extra) drawText(ctx, `${extra.name}: ${extra.desc}`, 210, 472, { size: 11.5, color: 'rgba(255,255,255,0.75)' });
+    if (def.ultra) drawText(ctx, `ULTRA (H): ${def.ultra.name} — ${def.ultra.desc ?? ''}`, 210, 472, { size: 11.5, color: '#ffd166' });
     if (!unlocked) {
       drawText(ctx, `🔒 UNLOCKS AT ACCOUNT LEVEL ${def.unlockLevel}`, 210, 494, { size: 13, color: '#ffb3bb' });
     }

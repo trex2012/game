@@ -1,6 +1,7 @@
-import { jumpVelForHeight, dist } from '../engine/utils.js';
+import { jumpVelForHeight, dist, rectsOverlap } from '../engine/utils.js';
 import { GRAVITY, W, H } from '../engine/constants.js';
 import { effects } from '../engine/effects.js';
+import { audio } from '../engine/audio.js';
 
 // Domain: vacuum every opposing lesser curse into storage. Strength is
 // irrelevant inside his territory — but bosses are beyond curse manipulation.
@@ -34,6 +35,7 @@ export default {
   moves: [
     { name: 'Cursed Spirit Bolt', desc: 'Homing curse wisp.' },
     { name: 'Curse Manipulation (L)', desc: 'Absorb a weakened lesser curse — unlimited storage, carried to the next level — or release one to fight for you.' },
+    { name: 'Maximum Uzumaki (H)', desc: 'Consume an absorbed BOSS curse: a blast that annihilates everything in its path, shatters terrain, and rips away half a boss\'s health.' },
   ],
 
   basic: {
@@ -129,6 +131,75 @@ export default {
     },
   },
 
+  // H — consume an absorbed BOSS curse in a terrain-shattering mega-Uzumaki.
+  ultra: {
+    name: 'Maximum Uzumaki: Boss Curse',
+    cooldown: 2,
+    onUse(ctx) {
+      const f = ctx.f;
+      const trophy = f.mem.bossStored;
+      if (!trophy) {
+        ctx.toast('NO BOSS CURSE — DEFEAT A BOSS AS GETO TO ABSORB ONE');
+        return;
+      }
+      f.mem.bossStored = null;
+      const world = ctx.world;
+      const level = world.level;
+      const dir = f.facing;
+      effects.showBanner('MAXIMUM: UZUMAKI', '#b58fdf', `${trophy.name.toUpperCase()} UNLEASHED`, 1.8);
+      audio.sfx('domain');
+      audio.say(`Maximum Uzumaki! ${trophy.name}!`, 'geto');
+      ctx.windup(0.5, () => {
+        if (!f.alive) return;
+        f.attackT = 0.35;
+        const y0 = f.cy - 75;
+        const x0 = dir > 0 ? f.cx : world.boundsMin;
+        const x1 = dir > 0 ? world.boundsMax : f.cx;
+        const beamRect = { x: Math.min(x0, x1), y: y0, w: Math.abs(x1 - x0), h: 150 };
+
+        effects.beam(f.cx, f.cy, dir, beamRect.w, '#b58fdf', 100);
+        effects.beam(f.cx, f.cy, dir, beamRect.w, '#ffffff', 34);
+        effects.flash(0.2, '#e8ddff');
+        effects.hitPause(20);
+        effects.slowmo(0.5);
+        world.camera?.shake(16, 0.6);
+
+        // annihilate everything in the path (Simple Domain still saves you)
+        for (const e of [...world.fighters]) {
+          if (e === f || !e.alive || e.team === f.team) continue;
+          if (!rectsOverlap(beamRect, e.rect)) continue;
+          if (e.simpleDomainT > 0) continue;
+          if (e.minionTier) {
+            e.die(world, f);
+          } else {
+            const dmg = Math.round(e.maxHp / 2); // half a boss's health, gone
+            e.receiveHit(
+              { damage: dmg, kx: 0, ky: 0, hitstun: 0, isMelee: false, soul: true, bypassesBarrier: true, tag: 'super' },
+              f, world,
+            );
+            e.hitstun = Math.max(e.hitstun, 1);
+            e.vx = dir * 420;
+            e.vy = -220;
+          }
+        }
+
+        // shatter terrain in the path (blocks and platforms — the base ground survives)
+        level.solids = level.solids.filter((s) => {
+          if (s.h > 130 || !rectsOverlap(beamRect, s)) return true;
+          effects.burst(s.x + s.w / 2, s.y + s.h / 2, ['#8a8578', '#5e5a50'], 18, { speed: 300 });
+          return false;
+        });
+        for (const p of level.oneWays) {
+          if (!p.gone && rectsOverlap(beamRect, p)) {
+            p.gone = true;
+            p.crumble = false; // destroyed for good, never respawns
+            effects.burst(p.x + p.w / 2, p.y, '#8a8578', 10, { speed: 200 });
+          }
+        }
+      }, { tell: false });
+    },
+  },
+
   domain: {
     name: 'Sea of Ten Thousand Curses',
     rank: 2,
@@ -173,7 +244,23 @@ export default {
   },
 
   hooks: {
+    onKill(ctx, target) {
+      const f = ctx.f;
+      // slaying a boss lets Geto claim its curse — spent with H
+      if (!target.minionTier && target.isBoss) {
+        f.mem.bossStored = { def: target.def, name: target.def.name };
+        effects.showBanner('BOSS CURSE ABSORBED', '#ffd166', `${target.def.name.toUpperCase()} — PRESS H TO UNLEASH`, 2);
+        effects.burst(f.cx, f.cy, ['#8e6bb8', '#ffd166'], 18, { speed: 220 });
+        audio.sfx('absorb');
+      }
+    },
     hudExtra(ctx2d, f, x, y) {
+      if (f.mem.bossStored) {
+        ctx2d.fillStyle = '#ffd166';
+        ctx2d.font = 'bold 11px monospace';
+        ctx2d.textAlign = 'left';
+        ctx2d.fillText(`H: ${f.mem.bossStored.name.toUpperCase()} READY`, x - 6, y + 20);
+      }
       const n = (f.mem.stored ?? []).length;
       ctx2d.fillStyle = '#8e6bb8';
       ctx2d.beginPath();

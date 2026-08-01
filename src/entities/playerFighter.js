@@ -42,6 +42,7 @@ export class PlayerFighter extends Fighter {
       if (input.pressed('basic')) this.tryBasic();
       if (input.pressed('super')) this.trySuper();
       if (input.pressed('special')) this.trySpecial();
+      if (input.pressed('ultra')) this.tryUltra();
     }
   }
 }

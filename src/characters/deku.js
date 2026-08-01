@@ -51,6 +51,33 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Delaware Smash',
+    cost: 25,
+    cooldown: 6,
+    desc: 'A finger-flick air blast — mid-range shockwave with heavy knockback.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.projectile({
+        damage: 15, speed: 650, range: 380, w: 30, h: 30,
+        kx: 380, ky: 200, hitstun: 0.4, tag: 'super',
+        color: 'rgba(180,255,200,0.7)',
+        draw(ctx2d, p) {
+          ctx2d.strokeStyle = 'rgba(160,255,190,0.85)';
+          ctx2d.lineWidth = 3;
+          for (let i = 0; i < 3; i++) {
+            ctx2d.globalAlpha = 1 - i * 0.3;
+            ctx2d.beginPath();
+            ctx2d.arc(p.cx - Math.sign(p.vx) * i * 8, p.cy, 8 + i * 5, -1, 1);
+            ctx2d.stroke();
+          }
+          ctx2d.globalAlpha = 1;
+        },
+      });
+      effects.ring(f.cx + f.facing * 24, f.cy - 8, '#7CFC8a', 40, 0.3);
+    },
+  },
+
   hooks: {
     onDealHit(ctx, target, hit) {
       if (hit.tag !== 'basic') return;

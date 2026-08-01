@@ -57,6 +57,29 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Decay Rush',
+    cost: 25,
+    cooldown: 8,
+    desc: 'Dash through enemies with outstretched hands — everything touched starts rotting.',
+    onUse(ctx) {
+      const f = ctx.f;
+      const startX = f.cx;
+      ctx.dash(220, 0.3);
+      f.invuln = Math.max(f.invuln, 0.2);
+      ctx.melee({
+        damage: 10, w: 250, h: 46, fixedX: startX + f.facing * 125, tag: 'super',
+        kx: 160, ky: 100, hitstun: 0.3,
+        onHitTarget: (t) => {
+          t.applyStatus('decay', 4, { src: f });
+          t.applyStatus('decay', 4, { src: f });
+          effects.burst(t.cx, t.cy, '#8a8578', 8, { speed: 140 });
+        },
+      });
+      effects.ghost({ x: f.x, y: f.y, w: f.w, h: f.h, color: '#9fc4d8' });
+    },
+  },
+
   hooks: {},
 
   drawExtras(ctx2d, f, c) {

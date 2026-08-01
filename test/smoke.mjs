@@ -24,7 +24,12 @@ function prep(f) {
 }
 function makeWorld() {
   const def = LEVELS[0];
-  const level = { ...def, oneWays: def.oneWays.map((p) => ({ ...p })) };
+  const level = {
+    ...def,
+    solids: def.solids.map((s) => ({ ...s })),
+    oneWays: def.oneWays.map((p) => ({ ...p })),
+    groundY: null,
+  };
   return new World(level, null);
 }
 function step(world, seconds) {
@@ -65,6 +70,11 @@ for (const def of ROSTER) {
     prep(p);
     const usedSuper = p.trySuper();
     step(w, 1.5);
+    // every character now has an H ultra — fire it too
+    p.energy = 100;
+    prep(p);
+    p.tryUltra();
+    step(w, 1.5);
     let domainOk = true;
     if (def.domain) {
       p.domainCharge = 100;
@@ -75,7 +85,7 @@ for (const def of ROSTER) {
       domainOk = domainOk && !w.activeDomain;
     }
     step(w, 2);
-    ok(usedSuper && domainOk, `${def.id}: basic/super${def.domain ? '/domain' : ''} ran clean`);
+    ok(usedSuper && domainOk, `${def.id}: basic/super/ultra${def.domain ? '/domain' : ''} ran clean`);
   } catch (e) {
     failures++;
     console.log(`  ✗ FAIL: ${def.id} threw: ${e.message}\n${e.stack.split('\n')[1]}`);
@@ -163,6 +173,74 @@ console.log('— Geto domain: devours every curse regardless of strength, not bo
   ok(boss.alive && boss.hp === boss.maxHp, 'boss is completely unaffected');
   step(w, 7);
   ok(!w.activeDomain, 'domain expires cleanly');
+}
+
+console.log('— Mahito ultra: Transfigured Wall blocks enemies, not Mahito —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.mahito, 200, 300);
+  w.addFighter(p);
+  step(w, 0.5);
+  p.mem.stored = [{ def: MINIONS.wisp, name: 'Wisp' }];
+  prep(p); p.facing = 1;
+  const solidsBefore = w.level.solids.length;
+  p.tryUltra();
+  step(w, 0.5);
+  const wall = w.fighters.find((e) => e.def.id === 'tf-wall');
+  ok(!!wall?.alive, 'wall of transfigured souls raised');
+  ok(p.mem.stored.length === 0, 'wall consumed the stored soul');
+  ok(w.level.solids.length === solidsBefore + 1, 'wall registers as solid terrain');
+  // enemy walks into it and is blocked; Mahito passes through
+  const enemy = new AIFighter(MINIONS.crawler, wall.x + 60, wall.y + 40, 'enemy', { brain: 'minion' });
+  w.addFighter(enemy);
+  enemy.control = function () { this.moveDir = -1; };
+  p.x = wall.x + 50; p.vx = 0;
+  p.control = function () { this.moveDir = -1; };
+  step(w, 1.2);
+  ok(enemy.x >= wall.x + wall.w - 6, 'enemy is blocked by the wall');
+  ok(p.x < wall.x - 4, 'Mahito walks straight through his own wall');
+  // breaking it removes the solid
+  wall.receiveHit({ damage: 500, kx: 0, ky: 0, hitstun: 0, isMelee: true, tag: 'super' }, enemy, w);
+  step(w, 0.2);
+  ok(!wall.alive && w.level.solids.length === solidsBefore, 'broken wall stops blocking');
+}
+
+console.log('— Geto ultra: absorb a slain boss, unleash it with H —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.geto, 200, 300);
+  w.addFighter(p);
+  const boss1 = new AIFighter(byId.maki, 250, 300, 'enemy', { brain: 'boss', difficulty: difficultyFor(3), isBoss: true });
+  boss1.control = () => {};
+  w.addFighter(boss1);
+  step(w, 0.3);
+  boss1.hp = 3;
+  boss1.invuln = 0;
+  prep(p); p.facing = 1;
+  boss1.receiveHit({ damage: 10, kx: 0, ky: 0, hitstun: 0, isMelee: false, tag: 'super' }, p, w);
+  ok(!boss1.alive, 'boss slain');
+  ok(p.mem.bossStored?.def === byId.maki, "boss curse absorbed into Geto's keeping");
+  // second boss + minion + platform in the beam path
+  const boss2 = new AIFighter(byId.allmight, 500, 300, 'enemy', { brain: 'boss', difficulty: difficultyFor(9), isBoss: true });
+  boss2.control = () => {};
+  const fodder = new AIFighter(MINIONS.brute, 400, 250, 'enemy', { brain: 'minion' });
+  w.addFighter(boss2); w.addFighter(fodder);
+  const platCount = w.level.oneWays.filter((pl) => !pl.gone).length;
+  step(w, 0.3);
+  prep(p); p.facing = 1;
+  const used = p.tryUltra();
+  step(w, 1);
+  ok(used, 'H unleashes Maximum Uzumaki');
+  ok(p.mem.bossStored == null, 'boss curse is consumed');
+  ok(!fodder.alive, 'minions in the path are annihilated');
+  ok(Math.abs(boss2.maxHp - boss2.hp - Math.round(boss2.maxHp / 2)) <= 2, `boss loses half its max HP (${boss2.maxHp - boss2.hp}/${boss2.maxHp})`);
+  const platAfter = w.level.oneWays.filter((pl) => !pl.gone).length;
+  ok(platAfter < platCount, `terrain in the path is destroyed (${platCount} -> ${platAfter} platforms)`);
+  prep(p);
+  p.cooldowns.ultra = 0;
+  const again = p.tryUltra();
+  step(w, 0.1);
+  ok(again !== false && p.mem.bossStored == null, 'H without a trophy just warns (no crash)');
 }
 
 console.log('— Mahito: civilians wander, panic, and transfigure —');
@@ -355,6 +433,23 @@ console.log('— regression: review-workflow fixes —');
   p.cooldowns.basic = 0; p.tryBasic();
   step(w, 0.2);
   ok(c.hp < c.maxHp, 'Frame Dash Strike hits the enemy he blinked through');
+}
+
+console.log('— Curse Nest: 3x domain charge —');
+{
+  const { levelByN } = await import(`${base}/data/levels.js`);
+  const nest = levelByN[98];
+  ok(!!nest && nest.farm && (nest.civilians ?? 7) === 0, 'Curse Nest exists with zero civilians');
+  const level = { ...nest, solids: nest.solids.map((sd) => ({ ...sd })), oneWays: nest.oneWays.map((pl) => ({ ...pl })), groundY: null };
+  const w = new World(level, null);
+  const p = new PlayerFighter(byId.geto, 200, 300);
+  w.addFighter(p);
+  const dummy = new AIFighter(MINIONS.brute, 260, 250, 'enemy', { brain: 'minion' });
+  dummy.control = () => {};
+  w.addFighter(dummy);
+  step(w, 0.3);
+  dummy.receiveHit({ damage: 20, kx: 0, ky: 0, hitstun: 0, isMelee: false, tag: 'super' }, p, w);
+  ok(Math.abs(p.domainCharge - 30) < 1, `domain gauge charges 3x in the Nest (${p.domainCharge.toFixed(1)} from 20 dmg, normally 10)`);
 }
 
 console.log('— progression math —');

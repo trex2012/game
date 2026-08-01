@@ -144,6 +144,37 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Cleave',
+    cost: 30,
+    cooldown: 8,
+    desc: 'Adaptive slash storm on the nearest enemy — cuts scale with their remaining health.',
+    onUse(ctx) {
+      const f = ctx.f;
+      const target = f.mem.aimTarget?.alive ? f.mem.aimTarget : ctx.nearestEnemy(340);
+      if (!target) {
+        f.energy = Math.min(100, f.energy + 30); // nothing to cut — refund
+        ctx.toast('NO TARGET IN RANGE');
+        return;
+      }
+      const dmg = Math.max(12, Math.round(target.hp * 0.15) + 10);
+      for (let i = 0; i < 5; i++) {
+        ctx.schedule(i * 0.07, () => {
+          if (!target.alive) return;
+          effects.slash(target.cx + rand(-34, 34), target.cy - 34, target.cx + rand(-34, 34), target.cy + 34, '#fff');
+        });
+      }
+      ctx.schedule(0.3, () => {
+        if (!target.alive) return;
+        target.receiveHit(
+          { damage: dmg, kx: 260, ky: 160, hitstun: 0.5, isMelee: false, bypassesBarrier: true, tag: 'super' },
+          f, ctx.world,
+        );
+        effects.burst(target.cx, target.cy, '#ff2244', 14, { speed: 240 });
+      });
+    },
+  },
+
   hooks: {},
 
   drawExtras(ctx2d, f, c) {

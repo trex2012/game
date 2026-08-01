@@ -182,6 +182,10 @@ export class World {
   // ---- deaths / xp -----------------------------------------------------
 
   onFighterDeath(f, source, opts = {}) {
+    if (f.solidRect) {
+      this.level.solids = this.level.solids.filter((s) => s !== f.solidRect);
+      f.solidRect = null;
+    }
     if (f.minionTier && !opts.silent) {
       const killerTeam = source?.team ?? 'neutral';
       if (killerTeam === 'player' && f.team === 'enemy' && f.def.xp) {
@@ -240,8 +244,8 @@ export class World {
     // projectiles vs fighters and walls
     for (const p of this.projectiles) {
       if (!p.alive) continue;
-      // solid collision
-      if (this.level.solids.some((s) => rectsOverlap(p.rect, s))) {
+      // solid collision (fighter-walls are handled as fighters, not solids)
+      if (this.level.solids.some((s) => !s.passTeam && rectsOverlap(p.rect, s))) {
         p.alive = false;
         p.onExpire?.(this, p);
         effects.burst(p.cx, p.cy, p.color, 4, { speed: 90 });

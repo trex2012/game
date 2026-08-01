@@ -69,6 +69,38 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Inverted Spear Throw',
+    cost: 25,
+    cooldown: 7,
+    desc: 'Hurl the Inverted Spear of Heaven — pierces barriers and nullifies techniques at range.',
+    onUse(ctx) {
+      ctx.projectile({
+        damage: 20, speed: 560, range: 520, w: 30, h: 8,
+        bypass: true, kx: 260, ky: 120, hitstun: 0.4, tag: 'super',
+        color: '#3a4048',
+        onHitTarget: (t) => {
+          t.dispel();
+          effects.ring(t.cx, t.cy, '#c58fff', 44, 0.3);
+        },
+        draw(ctx2d, p) {
+          ctx2d.save();
+          ctx2d.translate(p.cx, p.cy);
+          ctx2d.rotate(Math.atan2(p.vy, p.vx));
+          ctx2d.fillStyle = '#3a4048';
+          ctx2d.fillRect(-14, -1.5, 24, 3);
+          ctx2d.fillStyle = '#c0392b';
+          ctx2d.fillRect(-6, -2.5, 4, 5);
+          ctx2d.fillStyle = '#c8ccd4';
+          ctx2d.beginPath();
+          ctx2d.moveTo(10, 0); ctx2d.lineTo(16, -4); ctx2d.lineTo(16, 4);
+          ctx2d.fill();
+          ctx2d.restore();
+        },
+      });
+    },
+  },
+
   hooks: {
     // Heavenly Restriction: a body honed past sorcery — 30% less damage taken.
     onIncomingHit(ctx, hit) {

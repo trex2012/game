@@ -8,6 +8,7 @@ const DEFAULTS = () => ({
   lastCharacter: 'deku',
   lastLevel: 1,
   curseStash: {}, // per-character stored curses/transfigured that carry between levels
+  bossStash: {},  // Geto's absorbed boss curse (character id), carried between levels
   settings: { screenShake: true, damageNumbers: true, sound: true, voice: true },
 });
 

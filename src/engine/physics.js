@@ -14,6 +14,7 @@ export function stepPhysics(ent, level, dt, world) {
   ent.x += ent.vx * dt;
   let r = ent.rect;
   for (const s of solids) {
+    if (s.passTeam && s.passTeam === ent.team) continue; // Mahito walks through his own wall
     if (!rectsOverlap(r, s)) continue;
     if (ent.vx > 0) ent.x = s.x - ent.w;
     else if (ent.vx < 0) ent.x = s.x + s.w;
@@ -33,6 +34,7 @@ export function stepPhysics(ent, level, dt, world) {
   ent.onGround = false;
   r = ent.rect;
   for (const s of solids) {
+    if (s.passTeam && s.passTeam === ent.team) continue;
     if (!rectsOverlap(r, s)) continue;
     if (ent.vy > 0) {
       ent.y = s.y - ent.h;

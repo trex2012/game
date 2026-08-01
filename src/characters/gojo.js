@@ -96,6 +96,45 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Hollow Technique: Purple',
+    cost: 45, // ~34 after Six Eyes
+    cooldown: 12,
+    desc: 'Red and Blue collide — a mass of imaginary matter that erases everything it touches.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.windup(0.5, () => {
+        if (!f.alive) return;
+        f.attackT = 0.3;
+        effects.flash(0.12, '#b06ae8');
+        ctx.world.camera?.shake(10, 0.4);
+        ctx.projectile({
+          damage: 40, speed: 520, range: 720, w: 46, h: 46,
+          pierce: true, bypass: true, kx: 420, ky: 240, hitstun: 0.6, tag: 'super',
+          color: '#b06ae8', trail: '#7a3ab8',
+          draw(ctx2d, p) {
+            const t = p.life * 30;
+            ctx2d.fillStyle = '#b06ae8';
+            ctx2d.beginPath();
+            ctx2d.arc(p.cx, p.cy, 22 + Math.sin(t) * 3, 0, Math.PI * 2);
+            ctx2d.fill();
+            ctx2d.fillStyle = '#e8d0ff';
+            ctx2d.beginPath();
+            ctx2d.arc(p.cx, p.cy, 12, 0, Math.PI * 2);
+            ctx2d.fill();
+            ctx2d.strokeStyle = 'rgba(176,106,232,0.5)';
+            ctx2d.lineWidth = 2;
+            ctx2d.beginPath();
+            ctx2d.arc(p.cx, p.cy, 30 + Math.sin(t * 1.3) * 4, 0, Math.PI * 2);
+            ctx2d.stroke();
+          },
+        });
+      }, { tell: false });
+      effects.burst(f.cx + f.facing * 30, f.cy - 10, ['#ff5566', '#3aa0ff'], 12, { speed: 120 });
+      if (f === ctx.world.player) effects.toast('RED... BLUE... COMBINED.');
+    },
+  },
+
   hooks: {
     onUpdate(ctx, dt) {
       const f = ctx.f;

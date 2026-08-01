@@ -49,9 +49,12 @@ export class LevelScene extends Scene {
     const def = this.bossRush ? BOSS_RUSH_LEVEL : levelByN[params.levelN];
     // runtime copy: one-way platforms are stateful (crumble)
     this.def = def;
+    // deep-copy geometry: walls and terrain destruction mutate it at runtime
     this.level = {
       ...def,
+      solids: def.solids.map((s) => ({ ...s })),
       oneWays: def.oneWays.map((p) => ({ ...p, gone: false, crumbleT: 0, respawnT: 0 })),
+      groundY: null,
     };
     this.rng = seededRand(def.n * 1337 + 7);
     this.buildings = this.makeBuildings();
@@ -88,6 +91,11 @@ export class LevelScene extends Scene {
       for (let i = this.player.mem.stored.length; i < 10; i++) {
         this.player.mem.stored.push({ def: MINIONS.wisp, name: MINIONS.wisp.name });
       }
+    }
+    // Geto's absorbed boss curse carries over too
+    const bossTrophy = save.bossStash?.[charDef.id];
+    if (bossTrophy && byId[bossTrophy]) {
+      this.player.mem.bossStored = { def: byId[bossTrophy], name: byId[bossTrophy].name };
     }
 
     for (const hz of def.hazards) this.world.addHazard(new Hazard({ ...hz }));
@@ -277,6 +285,8 @@ export class LevelScene extends Scene {
           s.curseStash[this.params.charId] = (this.player.mem.stored ?? [])
             .map((r) => r.def?.id)
             .filter(Boolean);
+          s.bossStash ??= {};
+          s.bossStash[this.params.charId] = this.player.mem.bossStored?.def?.id ?? null;
         });
         this.game.changeScene('victory', {
           levelN: this.def.n,
@@ -531,6 +541,7 @@ export class LevelScene extends Scene {
       }
       drawText(ctx, `SUPER (K/X): ${def.super.name} — ${def.super.desc ?? ''}`, 200, y + 6, { size: 13, color: '#8be9fd' }); y += 32;
       if (def.special?.name) { drawText(ctx, `SPECIAL (L/C): ${def.special.name}`, 200, y, { size: 13, color: '#6fe3a0' }); y += 26; }
+      if (def.ultra?.name) { drawText(ctx, `ULTRA (H): ${def.ultra.name}`, 200, y, { size: 13, color: '#ffd166' }); y += 26; }
       drawText(
         ctx,
         def.domain ? `DOMAIN (R): ${def.domain.name} — ${def.domain.desc}` : 'DOMAIN (R): Simple Domain (needs 50 gauge, only inside an enemy domain)',

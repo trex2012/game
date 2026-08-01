@@ -46,6 +46,20 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Manji Kick',
+    cost: 20,
+    cooldown: 5,
+    desc: 'Sliding low kick that launches enemies skyward.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.dash(180, 0.3);
+      f.invuln = Math.max(f.invuln, 0.15);
+      ctx.melee({ damage: 14, w: 190, h: 34, fixedX: f.cx + f.facing * 95, oy: 12, kx: 120, ky: 340, hitstun: 0.5, tag: 'super' });
+      effects.ghost({ x: f.x, y: f.y, w: f.w, h: f.h, color: '#e8836f' });
+    },
+  },
+
   hooks: {
     onUpdate(ctx, dt) {
       ctx.f.mem.bfT = Math.max(0, (ctx.f.mem.bfT ?? 0) - dt);

@@ -62,6 +62,24 @@ export default {
     },
   },
 
+  ultra: {
+    name: 'Blood Meteorite',
+    cost: 25,
+    cooldown: 7,
+    desc: 'A fan of five hardened blood shards that pierce everything.',
+    onUse(ctx) {
+      const f = ctx.f;
+      for (let i = -2; i <= 2; i++) {
+        ctx.projectile({
+          damage: 8, vx: f.facing * 520, vy: i * 90, range: 420, w: 14, h: 8,
+          pierce: true, kx: 140, ky: 80, hitstun: 0.2, tag: 'super',
+          color: '#7a1228', trail: '#a41f36',
+        });
+      }
+      effects.burst(f.cx + f.facing * 20, f.cy - 6, '#a41f36', 10, { speed: 180 });
+    },
+  },
+
   hooks: {
     onUpdate(ctx, dt) {
       const f = ctx.f;

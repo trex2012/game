@@ -1,4 +1,4 @@
-import { jumpVelForHeight, dist, choice } from '../engine/utils.js';
+import { jumpVelForHeight, dist, choice, rand } from '../engine/utils.js';
 import { GRAVITY } from '../engine/constants.js';
 import { effects } from '../engine/effects.js';
 import gojo from './gojo.js';
@@ -96,6 +96,32 @@ export default {
         });
       }
       if (f === ctx.world.player) effects.toast('PRESS SUPER AGAIN TO USE IT');
+    },
+  },
+
+  ultra: {
+    name: 'Rivet Stab',
+    cost: 25,
+    cooldown: 7,
+    desc: 'Black tendril spikes erupt from the ground beneath the target.',
+    onUse(ctx) {
+      const f = ctx.f;
+      const target = f.mem.aimTarget?.alive ? f.mem.aimTarget : ctx.nearestEnemy(500);
+      const tx = target ? target.cx : f.cx + f.facing * 200;
+      const gy = ctx.world.level.groundY?.(tx) ?? 500;
+      ctx.schedule(0.4, () => {
+        ctx.melee({
+          damage: 18, w: 110, h: 130, fixedX: tx, fixedY: gy - 65, tag: 'super',
+          kx: 120, ky: 380, hitstun: 0.5,
+        });
+        for (let i = 0; i < 5; i++) {
+          effects.slash(tx - 40 + i * 20, gy, tx - 40 + i * 20 + rand(-10, 10), gy - 90 - rand(0, 40), '#c0392b');
+        }
+        effects.burst(tx, gy - 20, ['#141418', '#c0392b'], 14, { speed: 220 });
+        ctx.world.camera?.shake(6, 0.25);
+      });
+      // warning shadow
+      effects.slash(tx - 40, gy - 2, tx + 40, gy - 2, '#c0392b');
     },
   },
 

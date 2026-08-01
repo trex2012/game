@@ -1,6 +1,7 @@
 import { jumpVelForHeight, dist, sign } from '../engine/utils.js';
 import { GRAVITY } from '../engine/constants.js';
 import { effects } from '../engine/effects.js';
+import { Hazard } from '../entities/hazard.js';
 
 // ---- shikigami defs ----------------------------------------------------
 
@@ -198,6 +199,34 @@ export default {
           effects.slash(tx, ty, e.cx, e.cy, '#ffe066');
         }
       });
+    },
+  },
+
+  ultra: {
+    name: 'Max Elephant',
+    cost: 25,
+    cooldown: 8,
+    desc: 'Drop a shadow elephant on the target — heavy splash + slowing flood.',
+    onUse(ctx) {
+      const f = ctx.f;
+      const target = f.mem.aimTarget?.alive ? f.mem.aimTarget : ctx.nearestEnemy(450);
+      const tx = target ? target.cx : f.cx + f.facing * 140;
+      const ty = target ? target.y + target.h : f.y + f.h;
+      ctx.schedule(0.4, () => {
+        ctx.melee({
+          damage: 18, w: 200, h: 150, fixedX: tx, fixedY: ty - 70, tag: 'super',
+          kx: 220, ky: 180, hitstun: 0.5,
+          status: { name: 'slow', dur: 2, params: { factor: 0.6 } },
+        });
+        ctx.world.addHazard(new Hazard({
+          x: tx - 90, y: ty - 10, w: 180, h: 12, type: 'splat',
+          damage: 2, interval: 0.6, life: 1.6, color: '#4a6ab8', team: f.team,
+        }));
+        effects.burst(tx, ty - 40, ['#33405c', '#6a86c8'], 22, { speed: 300 });
+        effects.ring(tx, ty - 20, '#6a86c8', 110, 0.45);
+        ctx.world.camera?.shake(9, 0.35);
+      });
+      effects.toast('WITH THIS TREASURE I SUMMON...');
     },
   },
 

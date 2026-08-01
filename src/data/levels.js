@@ -232,20 +232,48 @@ export const FARM_LEVEL = {
     name: 'Cursed Harvest',
     bossId: null,
     farm: true,
-    civilians: 16,
+    civilians: 26,
     width: 3600,
     theme: { skyTop: '#241a3e', skyBottom: '#4a3a6e', far: '#332a52', near: '#1e1838', ground: '#3a3352', accent: '#b58fdf', particle: 'ember' },
     solids: [ground(0, 3600)],
     oneWays: [plat(600, 400, 160), plat(1400, 380, 160), plat(2200, 400, 160), plat(2900, 380, 160)],
     waves: [
-      wave(200, [s('wisp', 500, 380), s('wisp', 600, 350), s('wisp', 700, 320), s('crawler', 750, 470)]),
-      wave(900, [s('wisp', 1200, 360), s('wisp', 1300, 330), s('wisp', 1400, 300), s('crawler', 1450, 470), s('crawler', 1550, 470)]),
-      wave(1700, [s('wisp', 2000, 360), s('wisp', 2100, 330), s('wisp', 2200, 300), s('wisp', 2300, 340), s('crawler', 2350, 470)]),
-      wave(2500, [s('wisp', 2800, 360), s('wisp', 2900, 330), s('wisp', 3000, 300), s('crawler', 3050, 470), s('crawler', 3150, 470)]),
+      wave(200, [s('wisp', 500, 380), s('wisp', 600, 350), s('wisp', 700, 320), s('crawler', 750, 470), s('spitter', 640, 374)]),
+      wave(900, [s('wisp', 1200, 360), s('wisp', 1300, 330), s('wisp', 1400, 300), s('crawler', 1450, 470), s('crawler', 1550, 470), s('diver', 1350, 160), s('secbot', 1500, 468)]),
+      wave(1700, [s('wisp', 2000, 360), s('wisp', 2100, 330), s('wisp', 2200, 300), s('wisp', 2300, 340), s('crawler', 2350, 470), s('spitter', 2240, 374), s('diver', 2150, 150)]),
+      wave(2500, [s('wisp', 2800, 360), s('wisp', 2900, 330), s('wisp', 3000, 300), s('crawler', 3050, 470), s('crawler', 3150, 470), s('secbot', 2950, 468), s('diver', 3000, 160), s('brute', 3100, 448)]),
     ],
   }),
   xpFirst: 60,
   xpReplay: 20,
 };
 
-export const levelByN = Object.fromEntries([...LEVELS, FARM_LEVEL].map((l) => [l.n, l]));
+// Geto's bonus stage — wall-to-wall cursed spirits, zero humans, no boss.
+// The air is so saturated with cursed energy that domain gauges charge 3x.
+export const NEST_LEVEL = {
+  ...makeLevel({
+    n: 98,
+    name: 'Curse Nest',
+    bossId: null,
+    farm: true,
+    civilians: 0,
+    width: 3400,
+    theme: { skyTop: '#101c14', skyBottom: '#26402a', far: '#1a3020', near: '#0e1c12', ground: '#26382a', accent: '#8e6bb8', particle: 'ember' },
+    solids: [ground(0, 3400)],
+    oneWays: [plat(500, 400, 160), plat(1100, 360, 160), plat(1800, 400, 160), plat(2500, 360, 160)],
+    waves: [
+      wave(150, [s('wisp', 420, 380), s('wisp', 520, 340), s('wisp', 620, 300), s('crawler', 680, 470), s('spitter', 560, 374)]),
+      wave(800, [s('wisp', 1050, 360), s('wisp', 1150, 320), s('wisp', 1250, 290), s('crawler', 1300, 470), s('crawler', 1400, 470), s('diver', 1200, 150)]),
+      wave(1500, [s('wisp', 1750, 350), s('wisp', 1850, 310), s('wisp', 1950, 280), s('wisp', 2050, 340), s('spitter', 1840, 374), s('diver', 1950, 150), s('brute', 2000, 448)]),
+      wave(2200, [s('wisp', 2450, 350), s('wisp', 2550, 310), s('wisp', 2650, 280), s('crawler', 2700, 344), s('crawler', 2800, 470), s('spitter', 2600, 334), s('diver', 2700, 150), s('brute', 2850, 448)]),
+    ],
+  }),
+  xpFirst: 60,
+  xpReplay: 20,
+  domainChargeMult: 3,
+  cardLines: ['Wall-to-wall cursed spirits — no humans, no boss.', 'Cursed energy is thick here: domain gauge charges 3× faster. Feast, Geto.'],
+};
+
+FARM_LEVEL.cardLines = ['No boss — a street full of people and lesser curses.', 'Stock up Geto & Mahito, then reach the glowing gate to bank it all.'];
+
+export const levelByN = Object.fromEntries([...LEVELS, FARM_LEVEL, NEST_LEVEL].map((l) => [l.n, l]));
