@@ -107,6 +107,7 @@ export class World {
     if (!target.alive || !target.minionTier) return false;
     target.team = newTeam;
     target.converted = true;
+    target.hp = target.maxHp; // the soul is reshaped whole — transfiguration heals
     if (Number.isFinite(duration)) target.convertT = duration;
     target.dmgMult *= dmgMult;
     target.owner = owner;

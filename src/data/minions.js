@@ -1,4 +1,4 @@
-import { jumpVelForHeight } from '../engine/utils.js';
+import { jumpVelForHeight, choice } from '../engine/utils.js';
 import { GRAVITY } from '../engine/constants.js';
 import { effects } from '../engine/effects.js';
 import { Hazard } from '../entities/hazard.js';
@@ -259,4 +259,71 @@ export const brute = {
   },
 };
 
-export const MINIONS = { wisp, crawler, secbot, spitter, diver, brute };
+// Ordinary people who wander the levels. Neutral — nobody targets them, but
+// Mahito can transfigure them into his army (and they panic-run from fights).
+// Once converted they fight using the normal ground brain.
+export const civilian = {
+  id: 'civilian',
+  name: 'Civilian',
+  minionTier: true,
+  stats: { maxHp: 20, speed: 200, jumpVel: jumpVelForHeight(90, GRAVITY), weight: 'light' },
+  size: { w: 22, h: 36 },
+  brain: { mode: 'wander', sight: 260, range: 46, windup: 0.25, recover: 0.7 },
+  basic: {
+    cooldown: 0.6,
+    onUse(ctx) {
+      ctx.melee({ damage: 5, w: 34, h: 26, kx: 140, ky: 80, hitstun: 0.15, tag: 'pet' });
+    },
+  },
+  draw(ctx2d, f) {
+    if (!f.mem.civ) {
+      f.mem.civ = {
+        shirt: choice(['#c05a5a', '#5a7ac0', '#5aa06a', '#b08a4a', '#8a5aa0', '#d0b060']),
+        pants: choice(['#3a3f52', '#5c4a3a', '#2e4a5c']),
+        hair: choice(['#2a2320', '#5c4a2a', '#7a7a80', '#3a2e4a']),
+      };
+    }
+    const civ = f.mem.civ;
+    const c = (col) => (f.flash > 0 ? '#fff' : f.converted ? '#7d8ca3' : col);
+    ctx2d.save();
+    ctx2d.translate(f.cx, f.y + f.h);
+    ctx2d.scale(f.facing, 1);
+    const run = Math.abs(f.vx) > 20 && f.onGround ? Math.sin(f.animT * 16) * 4 : 0;
+    // legs
+    ctx2d.fillStyle = c(civ.pants);
+    ctx2d.fillRect(-6 + run, -11, 5, 11);
+    ctx2d.fillRect(1 - run, -11, 5, 11);
+    // shirt
+    ctx2d.fillStyle = c(civ.shirt);
+    ctx2d.beginPath();
+    ctx2d.roundRect(-7, -25, 14, 15, 3);
+    ctx2d.fill();
+    // head
+    ctx2d.fillStyle = c(f.converted ? '#9aa8ba' : '#f0cba0');
+    ctx2d.beginPath();
+    ctx2d.arc(0, -30, 8, 0, Math.PI * 2);
+    ctx2d.fill();
+    // hair
+    ctx2d.fillStyle = c(civ.hair);
+    ctx2d.beginPath();
+    ctx2d.arc(0, -32, 8, Math.PI, 0);
+    ctx2d.fill();
+    // face: scared "!" when fleeing, warped eyes when transfigured
+    ctx2d.fillStyle = c('#1c2030');
+    if (f.converted) {
+      ctx2d.fillRect(1, -31, 2, 4);
+      ctx2d.fillRect(5, -33, 2, 6);
+    } else {
+      ctx2d.fillRect(2, -31, 2, 2.5);
+      ctx2d.fillRect(5.5, -31, 2, 2.5);
+      if (f.mem.fleeing) {
+        ctx2d.fillStyle = '#ffd166';
+        ctx2d.font = 'bold 12px monospace';
+        ctx2d.fillText('!', -2, -44);
+      }
+    }
+    ctx2d.restore();
+  },
+};
+
+export const MINIONS = { wisp, crawler, secbot, spitter, diver, brute, civilian };

@@ -94,10 +94,12 @@ export class VictoryScene extends Scene {
     effects.drawWorld(ctx);
 
     drawText(ctx, '★ VICTORY ★', W / 2, 110, { size: 44, color: '#ffd166', align: 'center' });
-    if (this.levelDef) {
+    if (this.levelDef?.bossId) {
       drawText(ctx, `${byId[this.levelDef.bossId].name.toUpperCase()} HAS BEEN DEFEATED!`, W / 2, 150, {
         size: 16, color: '#fff', align: 'center',
       });
+    } else if (this.levelDef?.farm) {
+      drawText(ctx, 'CURSED HARVEST COMPLETE — STOCKPILE BANKED!', W / 2, 150, { size: 16, color: '#fff', align: 'center' });
     } else {
       drawText(ctx, 'BOSS RUSH COMPLETE!', W / 2, 150, { size: 16, color: '#fff', align: 'center' });
     }

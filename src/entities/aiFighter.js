@@ -96,6 +96,33 @@ export class AIFighter extends Fighter {
     }
 
     const mode = brain.mode ?? 'ground';
+
+    // civilians: amble around, panic-run from nearby fighters — until
+    // transfigured, at which point they fall through to the combat brain.
+    if (mode === 'wander' && !this.converted) {
+      const threat = world.fighters.find(
+        (o) => o.alive && o !== this && o.team !== 'neutral' &&
+          Math.abs(o.cx - this.cx) < 140 && Math.abs(o.cy - this.cy) < 90,
+      );
+      this.mem.fleeing = !!threat;
+      if (threat) {
+        this.moveDir = sign(this.cx - threat.cx) || 1;
+        this.facing = this.moveDir;
+      } else if (Math.floor(this.animT * 0.5) % 3 !== 0) {
+        this.moveDir = this.patrolDir * 0.35;
+        this.facing = this.patrolDir;
+      }
+      // flip at walls and ledges so they don't stroll into pits
+      const aheadX = this.facing > 0 ? this.x + this.w + 6 : this.x - 10;
+      const ledge = this.onGround && !collidesSolid(world.level, aheadX, this.y + this.h + 6, 4, 8);
+      if ((Math.abs(this.vx) < 5 && this.moveDir !== 0 && this.stateT > 0.4) || ledge) {
+        this.patrolDir *= -1;
+        this.moveDir = 0;
+        this.stateT = 0;
+      }
+      return;
+    }
+
     if (mode === 'turret') {
       if (!target) return;
       this.facing = sign(target.cx - this.cx);

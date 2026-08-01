@@ -4,7 +4,7 @@ import { input } from '../engine/input.js';
 import { drawText, drawBar, panel } from '../ui/text.js';
 import { drawPortrait } from '../entities/chibi.js';
 import { byId } from '../characters/index.js';
-import { LEVELS } from '../data/levels.js';
+import { LEVELS, FARM_LEVEL } from '../data/levels.js';
 import { loadSave, writeSave } from '../engine/save.js';
 import { levelForXp, xpIntoLevel, MAX_LEVEL } from '../data/progression.js';
 import { effects } from '../engine/effects.js';
@@ -25,6 +25,7 @@ export class LevelSelectScene extends Scene {
 
   entries() {
     const list = LEVELS.map((l) => ({ level: l }));
+    list.splice(1, 0, { level: FARM_LEVEL, farm: true }); // harvest stage after level 1
     if (this.bossRushUnlocked()) list.push({ bossRush: true });
     return list;
   }
@@ -34,6 +35,7 @@ export class LevelSelectScene extends Scene {
     const save = loadSave();
     const e = this.entries()[i];
     if (e.bossRush) return true;
+    if (e.farm) return !!save.clearedLevels[1];
     return e.level.n === 1 || !!save.clearedLevels[e.level.n - 1];
   }
 
@@ -53,7 +55,7 @@ export class LevelSelectScene extends Scene {
         return;
       }
       const e = entries[this.cursor];
-      writeSave((s) => { s.lastLevel = e.bossRush ? LEVELS.length : e.level.n; });
+      writeSave((s) => { s.lastLevel = e.bossRush || e.farm ? 1 : e.level.n; });
       this.game.changeScene('charSelect', e.bossRush ? { bossRush: true } : { levelN: e.level.n });
     }
   }
@@ -109,6 +111,8 @@ export class LevelSelectScene extends Scene {
       ctx.stroke();
       if (e.bossRush) {
         drawText(ctx, '∞', x + shake, y + 7, { size: 24, color: '#ff5566', align: 'center' });
+      } else if (e.farm && unlocked) {
+        drawText(ctx, '✚', x + shake, y + 7, { size: 20, color: '#b58fdf', align: 'center' });
       } else if (!unlocked) {
         drawText(ctx, '🔒', x + shake, y + 6, { size: 16, align: 'center', outline: false });
       } else {
@@ -124,6 +128,13 @@ export class LevelSelectScene extends Scene {
       drawText(ctx, 'BOSS RUSH', 60, 402, { size: 20, color: '#ff5566' });
       drawText(ctx, 'Every boss, back to back. No checkpoints. Good luck.', 60, 430, { size: 13, color: '#fff' });
       drawText(ctx, 'Reward: 300 XP per full clear', 60, 454, { size: 12, color: '#8be9fd' });
+    } else if (e.farm) {
+      drawText(ctx, 'BONUS: CURSED HARVEST', 60, 402, { size: 18, color: '#b58fdf' });
+      drawText(ctx, 'No boss — a street full of people and lesser curses.', 60, 430, { size: 13, color: '#fff' });
+      drawText(ctx, 'Stock up Geto & Mahito, then reach the glowing gate to bank it all.', 60, 454, { size: 12, color: '#8be9fd' });
+      drawText(ctx, this.isUnlocked(this.cursor) ? 'Enter to harvest (replayable)' : 'Clear level 1 to unlock', 60, 480, {
+        size: 12, color: this.isUnlocked(this.cursor) ? '#6fe3a0' : 'rgba(255,255,255,0.5)',
+      });
     } else {
       const lvl = e.level;
       const boss = byId[lvl.bossId];

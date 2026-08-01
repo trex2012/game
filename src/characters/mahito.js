@@ -127,6 +127,12 @@ export default {
         if (e.simpleDomainT > 0) continue;
         convertTarget(ctx, e);
       }
+      // the sure-hit touch spares no one — bystanders transfigure too
+      for (const c of [...ctx.world.fighters]) {
+        if (c.alive && c.team === 'neutral' && c.minionTier && c.simpleDomainT <= 0) {
+          convertTarget(ctx, c);
+        }
+      }
     },
     onTick(ctx, dt) {
       ctx.f.hp = Math.min(ctx.f.maxHp, ctx.f.hp + 3 * dt);
@@ -166,11 +172,12 @@ export default {
     onDealHit(ctx, target, hit) {
       const f = ctx.f;
       // Idle Transfiguration: enough touches reshape a lesser curse's soul.
-      // Only minion-tier — bosses and players resist entirely.
+      // Only minion-tier — bosses and players resist entirely. A touch that
+      // would kill transfigures instead: Mahito doesn't kill souls, he reshapes them.
       if (hit.tag !== 'basic' || !target.minionTier || target.team === f.team || target.converted) return;
       target.tfStacks = (target.tfStacks ?? 0) + 1;
       effects.ring(target.cx, target.cy, '#4aa3df', 12 + target.tfStacks * 8, 0.25);
-      if (target.tfStacks >= STACKS_TO_TRANSFIGURE) convertTarget(ctx, target);
+      if (target.tfStacks >= STACKS_TO_TRANSFIGURE || target.hp <= 0) convertTarget(ctx, target);
     },
     onIncomingHit(ctx, hit) {
       const f = ctx.f;

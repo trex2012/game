@@ -142,6 +142,24 @@ console.log('— Mahito: 3 basic hits transfigure a curse; store, carry, and thr
   ok(boss.hp < hpBefore, `toss projectile damages the boss (${hpBefore - boss.hp} dmg)`);
 }
 
+console.log('— Mahito: civilians wander, panic, and transfigure —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.mahito, 200, 300);
+  w.addFighter(p);
+  const civ = new AIFighter(MINIONS.civilian, 250, 300, 'neutral', { brain: 'minion' });
+  w.addFighter(civ);
+  step(w, 0.5);
+  ok(civ.alive && civ.team === 'neutral', 'civilian exists peacefully');
+  ok(civ.mem.fleeing === true, 'civilian panics near a fighter');
+  p.facing = 1;
+  for (let i = 0; i < 12 && !civ.converted; i++) {
+    civ.x = p.x + 36; civ.vx = 0;
+    prep(p); p.cooldowns.basic = 0; p.tryBasic(); step(w, 0.35);
+  }
+  ok(civ.converted && civ.team === 'player', 'civilian transfigured into an ally');
+}
+
 console.log('— Gojo: Limitless blocks melee, Void freezes, Toji bypasses —');
 {
   const w = makeWorld();

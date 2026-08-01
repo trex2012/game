@@ -224,4 +224,28 @@ export const LEVELS = [
   }),
 ];
 
-export const levelByN = Object.fromEntries(LEVELS.map((l) => [l.n, l]));
+// Bonus farm stage — no boss, just crowds of humans and lesser curses so Geto
+// and Mahito can stock up. Reach the exit gate to bank everything you stored.
+export const FARM_LEVEL = {
+  ...makeLevel({
+    n: 99,
+    name: 'Cursed Harvest',
+    bossId: null,
+    farm: true,
+    civilians: 16,
+    width: 3600,
+    theme: { skyTop: '#241a3e', skyBottom: '#4a3a6e', far: '#332a52', near: '#1e1838', ground: '#3a3352', accent: '#b58fdf', particle: 'ember' },
+    solids: [ground(0, 3600)],
+    oneWays: [plat(600, 400, 160), plat(1400, 380, 160), plat(2200, 400, 160), plat(2900, 380, 160)],
+    waves: [
+      wave(200, [s('wisp', 500, 380), s('wisp', 600, 350), s('wisp', 700, 320), s('crawler', 750, 470)]),
+      wave(900, [s('wisp', 1200, 360), s('wisp', 1300, 330), s('wisp', 1400, 300), s('crawler', 1450, 470), s('crawler', 1550, 470)]),
+      wave(1700, [s('wisp', 2000, 360), s('wisp', 2100, 330), s('wisp', 2200, 300), s('wisp', 2300, 340), s('crawler', 2350, 470)]),
+      wave(2500, [s('wisp', 2800, 360), s('wisp', 2900, 330), s('wisp', 3000, 300), s('crawler', 3050, 470), s('crawler', 3150, 470)]),
+    ],
+  }),
+  xpFirst: 60,
+  xpReplay: 20,
+};
+
+export const levelByN = Object.fromEntries([...LEVELS, FARM_LEVEL].map((l) => [l.n, l]));

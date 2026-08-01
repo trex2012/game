@@ -82,8 +82,23 @@ export class LevelScene extends Scene {
         .filter(Boolean)
         .map((d) => ({ def: d, name: d.name }));
     }
+    // ...and both summoners always start a level with at least 10 wisps stored
+    if (charDef.id === 'geto' || charDef.id === 'mahito') {
+      this.player.mem.stored ??= [];
+      for (let i = this.player.mem.stored.length; i < 10; i++) {
+        this.player.mem.stored.push({ def: MINIONS.wisp, name: MINIONS.wisp.name });
+      }
+    }
 
     for (const hz of def.hazards) this.world.addHazard(new Hazard({ ...hz }));
+
+    // ordinary people wandering every level — set dressing, and Mahito's fodder
+    for (let i = 0; i < (def.civilians ?? 7); i++) {
+      const x = 250 + this.rng() * (def.width - 500);
+      const gy = this.level.groundY?.(x) ?? 500;
+      if (gy >= (this.level.height ?? 540)) continue; // over a pit
+      this.world.addFighter(new AIFighter(MINIONS.civilian, x, gy - 50, 'neutral', { brain: 'minion' }));
+    }
 
     this.waves = def.waves.map((w) => ({ ...w, done: fromBoss || params.fromCheckpoint && w.triggerX < startX - 200, spawned: [] }));
     this.lockedWave = null;
@@ -216,8 +231,8 @@ export class LevelScene extends Scene {
       }
     }
 
-    // boss trigger
-    if (!this.bossStarted && this.player.x > this.def.arena.x - 180) {
+    // boss trigger (farm stages have no boss — the exit gate wins instead)
+    if (!this.bossStarted && !this.def.farm && this.player.x > this.def.arena.x - 180) {
       this.startBossFight();
     }
     this.bossIntroT = Math.max(0, this.bossIntroT - dt);
@@ -236,6 +251,10 @@ export class LevelScene extends Scene {
         this.stateT = 0;
         effects.slowmo(0.9);
         this.camera.zoomTarget = 1.15;
+      } else if (this.def.farm && this.player.x > this.def.width - 160) {
+        this.state = 'won';
+        this.stateT = 0;
+        effects.slowmo(0.9);
       } else if (this.bossStarted && this.world.boss && !this.world.boss.alive) {
         if (this.bossRush && this.rushIndex < this.rushQueue.length - 1) {
           this.rushIndex++;
@@ -442,8 +461,22 @@ export class LevelScene extends Scene {
       ctx.fillStyle = 'rgba(255,255,255,0.25)';
       ctx.fillRect(p.x, p.y + shake, p.w, 3);
     }
+    // farm exit gate — a glowing torii
+    if (this.def.farm) {
+      const gx = this.def.width - 140;
+      const gy = this.level.groundY?.(gx) ?? 500;
+      const pulse = 0.6 + Math.sin(this.world.time * 4) * 0.3;
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = t.accent;
+      ctx.fillRect(gx - 36, gy - 110, 10, 110);
+      ctx.fillRect(gx + 26, gy - 110, 10, 110);
+      ctx.fillRect(gx - 48, gy - 122, 96, 12);
+      ctx.fillRect(gx - 38, gy - 100, 76, 7);
+      ctx.globalAlpha = 1;
+    }
+
     // checkpoint banner pole
-    if (!this.bossRush && this.def.checkpointX < this.def.width) {
+    if (!this.bossRush && !this.def.farm && this.def.checkpointX < this.def.width) {
       const cx = this.def.checkpointX;
       const gy = this.level.groundY?.(cx) ?? 500;
       ctx.strokeStyle = '#c8c2b2';
