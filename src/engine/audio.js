@@ -20,6 +20,9 @@ const VOICE = {
   todoroki: { pitch: 0.9, rate: 0.9 },
   nobara: { pitch: 1.3, rate: 1.15 },
   nanami: { pitch: 0.7, rate: 0.95 },
+  higuruma: { pitch: 0.65, rate: 0.9 },
+  yuta: { pitch: 1.05, rate: 1.0 },
+  hawks: { pitch: 1.0, rate: 1.15 },
 };
 
 class GameAudio {

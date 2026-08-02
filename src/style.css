@@ -65,6 +65,57 @@ canvas {
   color: rgba(255, 255, 255, 0.55);
 }
 
+/* floating joystick (left half of the screen) */
+
+.touch-stick-zone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-stick-base,
+.touch-stick-knob {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  display: none;
+}
+
+.touch-stick-base.on,
+.touch-stick-knob.on {
+  display: block;
+}
+
+.touch-stick-base {
+  width: 124px;
+  height: 124px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+}
+
+.touch-stick-knob {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 209, 102, 0.45);
+  border: 2px solid rgba(255, 209, 102, 0.9);
+}
+
+.stick-hint {
+  position: absolute;
+  left: 24px;
+  bottom: 20px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
 .rotate-hint {
   display: none;
   position: absolute;

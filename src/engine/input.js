@@ -69,6 +69,16 @@ class Input {
     return this.mouse.click;
   }
 
+  // Touch overlay: the joystick zone swallows pointer events, so it forwards
+  // quick no-drag taps here as ordinary mouse clicks (keeps menus tappable).
+  tapAt(clientX, clientY) {
+    if (!this._canvas) return;
+    const r = this._canvas.getBoundingClientRect();
+    this.mouse.x = ((clientX - r.left) * W) / r.width;
+    this.mouse.y = ((clientY - r.top) * H) / r.height;
+    this.mouse.click = true;
+  }
+
   mouseIn(x, y, w, h) {
     const m = this.mouse;
     return m.x >= x && m.x < x + w && m.y >= y && m.y < y + h;

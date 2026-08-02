@@ -15,6 +15,7 @@ import gojo from './gojo.js';
 import sukuna from './sukuna.js';
 import todoroki from './todoroki.js';
 import allforone from './allforone.js';
+import higuruma from './higuruma.js';
 import nanami from './nanami.js';
 import yuta from './yuta.js';
 import hawks from './hawks.js';
@@ -22,7 +23,7 @@ import hawks from './hawks.js';
 // Display/unlock order: starters first, then by unlock level.
 export const ROSTER = [
   deku, yuji, maki, bakugo, megumi, nobara, naoya, choso, mahito,
-  toji, geto, shigaraki, allmight, gojo, sukuna, todoroki, allforone, nanami, yuta, hawks,
+  toji, geto, shigaraki, allmight, gojo, sukuna, todoroki, allforone, higuruma, nanami, yuta, hawks,
 ];
 
 export const byId = Object.fromEntries(ROSTER.map((d) => [d.id, d]));

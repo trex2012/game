@@ -627,6 +627,48 @@ console.log('— Blasty: Howitzer Impact detonates with burn —');
   ok(!!dummy.statuses.burn || !dummy.alive, 'Howitzer Impact lands its burning blast');
 }
 
+console.log('— Higloomy: evidence, Guilty Verdict confiscation, Executioner bonus —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.higuruma, 200, 300);
+  w.addFighter(p);
+  const boss = new AIFighter(byId.gojo, 260, 300, 'enemy', { brain: 'boss', difficulty: difficultyFor(5), isBoss: true });
+  boss.control = () => {}; boss.setState = () => {};
+  w.addFighter(boss);
+  step(w, 0.5);
+  p.facing = 1;
+  for (let i = 0; i < 3; i++) {
+    boss.x = p.x + 40; boss.vx = 0; boss.invuln = 0;
+    prep(p); p.cooldowns.basic = 0; p.tryBasic(); step(w, 0.3);
+  }
+  const evidence = boss.mem.evidence ?? 0;
+  ok(evidence >= 3, `gavel hits file evidence (${evidence})`);
+  const hpBefore = boss.hp;
+  prep(p); p.energy = 100;
+  p.trySuper();
+  step(w, 0.2);
+  ok(hpBefore - boss.hp >= 10 + evidence * 4 - 1, `verdict damage scales with evidence (${hpBefore - boss.hp} dmg)`);
+  ok(boss.powerStolenT > 0, 'Confiscation locks the victim out');
+  ok((boss.mem.evidence ?? 0) === 0, 'the trial consumes the evidence');
+  boss.energy = 100;
+  prep(boss);
+  ok(!boss.trySuper(), "confiscated target can't fire their super");
+  ok((boss.mem.convicted ?? 0) > w.time, 'conviction mark applied');
+  // Executioner's Sword doubles against the convicted
+  prep(p); p.energy = 100;
+  boss.x = p.x + 50; boss.vx = 0; boss.invuln = 0;
+  const hp2 = boss.hp;
+  p.tryUltra();
+  step(w, 0.3);
+  ok(hp2 - boss.hp >= 34, `execution hits double vs convicted (${hp2 - boss.hp} dmg)`);
+  // Objection: the next hit is overruled and the attacker pays for it
+  prep(p); p.energy = 100;
+  p.tryTech();
+  const landed = p.receiveHit({ damage: 12, kx: 150, ky: 80, hitstun: 0.3, isMelee: true }, boss, w);
+  ok(!landed, 'Objection overrules the incoming hit');
+  ok(!!boss.statuses.stun, 'the overruled attacker is stunned');
+}
+
 console.log('— progression math —');
 {
   ok(levelForXp(0) === 1 && levelForXp(100) === 2 && levelForXp(5200) === 14 && levelForXp(6600) === 16, 'XP thresholds map to levels');

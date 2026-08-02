@@ -8,7 +8,7 @@ import { loadSave, writeSave } from '../engine/save.js';
 import { levelForXp, isUnlocked } from '../data/progression.js';
 import { effects } from '../engine/effects.js';
 
-const COLS = 10; // 20 fighters -> two rows of 10
+const COLS = 11; // 21 fighters -> two rows of 11/10
 const BACK_RECT = { x: 28, y: H - 38, w: 116, h: 32 };
 
 export class CharacterSelectScene extends Scene {
@@ -22,11 +22,11 @@ export class CharacterSelectScene extends Scene {
   }
 
   cellRect(i) {
-    const cellW = 96;
+    const cellW = 86;
     const startX = W / 2 - (COLS * cellW) / 2 + cellW / 2;
     const x = startX + (i % COLS) * cellW;
     const y = 90 + Math.floor(i / COLS) * 122;
-    return { x: x - 48, y, w: 96, h: 108 };
+    return { x: x - 41, y, w: 82, h: 108 };
   }
 
   update(dt) {
@@ -79,7 +79,7 @@ export class CharacterSelectScene extends Scene {
 
     const save = loadSave();
     const acct = levelForXp(save.xp);
-    const cellW = 96;
+    const cellW = 86;
     const startX = W / 2 - (COLS * cellW) / 2 + cellW / 2;
 
     ROSTER.forEach((def, i) => {
@@ -91,26 +91,26 @@ export class CharacterSelectScene extends Scene {
       const sel = i === this.cursor;
       const shake = sel && this.denyT > 0 ? Math.sin(this.t * 60) * 4 : 0;
 
-      panel(ctx, x - 48 + shake, y, 96, 108, {
+      panel(ctx, x - 41 + shake, y, 82, 108, {
         fill: sel ? 'rgba(60,50,20,0.9)' : 'rgba(10,12,24,0.8)',
         strokeColor: sel ? '#ffd166' : 'rgba(255,255,255,0.2)',
       });
       if (unlocked) {
-        drawPortrait(ctx, def, x + shake, y + 78, 1.15, sel ? this.t : 0);
+        drawPortrait(ctx, def, x + shake, y + 78, 1.05, sel ? this.t : 0);
         if (!save.seenUnlocks.includes(def.id)) {
-          drawText(ctx, 'NEW!', x + 30 + shake, y + 16, { size: 11, color: '#ffd166', align: 'center' });
+          drawText(ctx, 'NEW!', x + 26 + shake, y + 16, { size: 11, color: '#ffd166', align: 'center' });
         }
       } else {
         ctx.save();
         ctx.globalAlpha = 0.85;
         ctx.filter = 'grayscale(1) brightness(0.3)';
-        drawPortrait(ctx, def, x + shake, y + 78, 1.15);
+        drawPortrait(ctx, def, x + shake, y + 78, 1.05);
         ctx.restore();
         ctx.filter = 'none';
         drawText(ctx, `Lv ${def.unlockLevel}`, x + shake, y + 20, { size: 11, color: '#ffb3bb', align: 'center' });
       }
       drawText(ctx, def.name.split(' ')[0].toUpperCase(), x + shake, y + 100, {
-        size: 10.5, color: unlocked ? '#fff' : 'rgba(255,255,255,0.4)', align: 'center',
+        size: 10, color: unlocked ? '#fff' : 'rgba(255,255,255,0.4)', align: 'center', maxWidth: 76,
       });
     });
 
