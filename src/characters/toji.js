@@ -4,7 +4,7 @@ import { effects } from '../engine/effects.js';
 
 export default {
   id: 'toji',
-  name: 'Toji Fushiguro',
+  name: 'Toshi Sorcslayer',
   series: 'JJK',
   unlockLevel: 7,
   stats: { maxHp: 170, speed: 345, jumpVel: jumpVelForHeight(175, GRAVITY), weight: 'medium' },
@@ -66,6 +66,27 @@ export default {
         });
         effects.slash(f.cx, f.cy, f.cx + f.facing * 80, f.cy, '#c58fff');
       });
+    },
+  },
+
+  tech: {
+    name: 'Chain Bind',
+    cost: 15,
+    cooldown: 6,
+    desc: 'The Chain of a Thousand Miles snares, drags, and briefly stuns.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.melee({
+        damage: 6, w: 200, h: 30, ox: 105, kx: 360, ky: 40, hitstun: 0.3,
+        pullTo: true, bypass: true,
+        status: { name: 'stun', dur: 0.5 },
+      });
+      for (let i = 0; i < 8; i++) {
+        effects.particles.push({
+          x: f.cx + f.facing * (18 + i * 24), y: f.cy - 4, vx: 0, vy: 0,
+          life: 0.18, maxLife: 0.18, size: 3, color: '#8a929c', gravity: 0,
+        });
+      }
     },
   },
 

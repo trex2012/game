@@ -5,7 +5,7 @@ import { Hazard } from '../entities/hazard.js';
 
 export default {
   id: 'sukuna',
-  name: 'Sukuna',
+  name: 'Sookuna Curse King',
   series: 'JJK',
   unlockLevel: 1, // the King of Curses bows to no unlock gate — starter by request
   stats: { maxHp: 190, speed: 300, jumpVel: jumpVelForHeight(170, GRAVITY), weight: 'heavy' },
@@ -141,6 +141,27 @@ export default {
         x === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
       }
       ctx2d.stroke();
+    },
+  },
+
+  tech: {
+    name: 'Spiderweb',
+    cost: 20,
+    cooldown: 6,
+    desc: 'A cracking web of slashes along the ground that stuns whoever stands on it.',
+    onUse(ctx) {
+      const f = ctx.f;
+      const gy = ctx.world.level.groundY?.(f.cx) ?? 500;
+      ctx.melee({
+        damage: 10, w: 240, h: 46, fixedX: f.cx + f.facing * 125, fixedY: gy - 20,
+        life: 0.14, kx: 140, ky: 160, hitstun: 0.3, tag: 'super',
+        status: { name: 'stun', dur: 0.4 },
+      });
+      for (let i = 0; i < 6; i++) {
+        const px = f.cx + f.facing * (30 + i * 38);
+        effects.slash(px - 16, gy - 2, px + 16, gy - 26 - (i % 3) * 8, '#fff');
+      }
+      ctx.world.camera?.shake(4, 0.2);
     },
   },
 

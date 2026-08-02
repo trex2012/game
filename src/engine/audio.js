@@ -16,6 +16,10 @@ const VOICE = {
   gojo: { pitch: 1.1, rate: 1.1 },
   sukuna: { pitch: 0.5, rate: 0.9 },
   allforone: { pitch: 0.4, rate: 0.85 },
+  bakugo: { pitch: 1.0, rate: 1.25 },
+  todoroki: { pitch: 0.9, rate: 0.9 },
+  nobara: { pitch: 1.3, rate: 1.15 },
+  nanami: { pitch: 0.7, rate: 0.95 },
 };
 
 class GameAudio {

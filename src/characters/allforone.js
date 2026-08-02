@@ -10,7 +10,7 @@ const STEAL_TIME = 12;
 
 export default {
   id: 'allforone',
-  name: 'All For One',
+  name: 'Snatchlord',
   series: 'MHA',
   unlockLevel: 13,
   stats: { maxHp: 200, speed: 250, jumpVel: jumpVelForHeight(150, GRAVITY), weight: 'colossal' },
@@ -96,6 +96,34 @@ export default {
         });
       }
       if (f === ctx.world.player) effects.toast('PRESS SUPER AGAIN TO USE IT');
+    },
+  },
+
+  tech: {
+    name: 'Quirk Vault',
+    cost: 10,
+    cooldown: 6,
+    desc: 'Siphon 15 energy from the nearest fighter into your own reserves.',
+    onUse(ctx) {
+      const f = ctx.f;
+      const target = f.mem.aimTarget?.alive ? f.mem.aimTarget : ctx.nearestEnemy(320);
+      if (!target) {
+        f.energy = Math.min(100, f.energy + 10); // refund
+        ctx.toast('NOTHING WORTH TAKING NEARBY');
+        return;
+      }
+      const drained = Math.min(15, target.energy);
+      target.energy -= drained;
+      f.gainEnergy(15, 'dealt');
+      target.receiveHit({ damage: 8 * f.dmgMult, kx: 120, ky: 80, hitstun: 0.25, isMelee: false, tag: 'super' }, f, ctx.world);
+      for (let i = 0; i < 10; i++) {
+        const t = i / 10;
+        effects.particles.push({
+          x: target.cx + (f.cx - target.cx) * t, y: target.cy - Math.sin(t * Math.PI) * 24,
+          vx: (f.cx - target.cx), vy: 0,
+          life: 0.35, maxLife: 0.35, size: 3.5, color: i % 2 ? '#c0392b' : '#4aa3df', gravity: 0,
+        });
+      }
     },
   },
 

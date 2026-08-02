@@ -8,7 +8,8 @@ import { loadSave, writeSave } from '../engine/save.js';
 import { levelForXp, isUnlocked } from '../data/progression.js';
 import { effects } from '../engine/effects.js';
 
-const COLS = 7;
+const COLS = 10; // 20 fighters -> two rows of 10
+const BACK_RECT = { x: 28, y: H - 38, w: 116, h: 32 };
 
 export class CharacterSelectScene extends Scene {
   enter(params) {
@@ -20,28 +21,51 @@ export class CharacterSelectScene extends Scene {
     this.denyT = 0;
   }
 
+  cellRect(i) {
+    const cellW = 96;
+    const startX = W / 2 - (COLS * cellW) / 2 + cellW / 2;
+    const x = startX + (i % COLS) * cellW;
+    const y = 90 + Math.floor(i / COLS) * 122;
+    return { x: x - 48, y, w: 96, h: 108 };
+  }
+
   update(dt) {
     this.t += dt;
     this.denyT = Math.max(0, this.denyT - dt);
     effects.update(dt);
+    if (input.mouseIn(BACK_RECT.x, BACK_RECT.y, BACK_RECT.w, BACK_RECT.h)) {
+      input.mouse.hot = true;
+      if (input.clicked()) { this.game.changeScene('levelSelect'); return; }
+    }
+    const hov = ROSTER.findIndex((_, i) => {
+      const r = this.cellRect(i);
+      return input.mouseIn(r.x, r.y, r.w, r.h);
+    });
+    if (hov >= 0) {
+      input.mouse.hot = true;
+      if (input.mouse.moved || input.mouse.click) this.cursor = hov;
+      if (input.clicked()) { this.pick(); return; }
+    }
     if (input.pressed('right')) this.cursor = (this.cursor + 1) % ROSTER.length;
     if (input.pressed('left')) this.cursor = (this.cursor + ROSTER.length - 1) % ROSTER.length;
     if (input.pressed('down')) this.cursor = Math.min(ROSTER.length - 1, this.cursor + COLS);
     if (input.pressed('up')) this.cursor = Math.max(0, this.cursor - COLS);
     if (input.pressed('back')) { this.game.changeScene('levelSelect'); return; }
-    if (input.pressed('confirm')) {
-      const def = ROSTER[this.cursor];
-      const acct = levelForXp(loadSave().xp);
-      if (!isUnlocked(def, acct)) {
-        this.denyT = 0.35;
-        return;
-      }
-      writeSave((s) => {
-        s.lastCharacter = def.id;
-        if (!s.seenUnlocks.includes(def.id)) s.seenUnlocks.push(def.id);
-      });
-      this.game.changeScene('level', { ...this.params, charId: def.id });
+    if (input.pressed('confirm')) this.pick();
+  }
+
+  pick() {
+    const def = ROSTER[this.cursor];
+    const acct = levelForXp(loadSave().xp);
+    if (!isUnlocked(def, acct)) {
+      this.denyT = 0.35;
+      return;
     }
+    writeSave((s) => {
+      s.lastCharacter = def.id;
+      if (!s.seenUnlocks.includes(def.id)) s.seenUnlocks.push(def.id);
+    });
+    this.game.changeScene('level', { ...this.params, charId: def.id });
   }
 
   draw(ctx) {
@@ -55,7 +79,7 @@ export class CharacterSelectScene extends Scene {
 
     const save = loadSave();
     const acct = levelForXp(save.xp);
-    const cellW = 110;
+    const cellW = 96;
     const startX = W / 2 - (COLS * cellW) / 2 + cellW / 2;
 
     ROSTER.forEach((def, i) => {
@@ -96,23 +120,27 @@ export class CharacterSelectScene extends Scene {
     panel(ctx, 60, 348, W - 120, 152);
     drawPortrait(ctx, def, 130, 480, 1.9, this.t);
     drawText(ctx, `${def.name.toUpperCase()}  —  ${def.series}`, 210, 380, { size: 18, color: '#ffd166' });
+    const INFO_W = W - 120 - 150 - 16; // panel right edge minus text x, minus padding
     const basicDesc = def.moves?.[0]?.desc ?? '';
-    drawText(ctx, `BASIC: ${def.basic.name} — ${basicDesc}`, 210, 406, { size: 12, color: '#fff' });
-    drawText(ctx, `SUPER: ${def.super.name} — ${def.super.desc ?? ''}`, 210, 428, { size: 12, color: '#8be9fd' });
+    drawText(ctx, `BASIC: ${def.basic.name} — ${basicDesc}`, 210, 406, { size: 12, color: '#fff', maxWidth: INFO_W });
+    drawText(ctx, `SUPER: ${def.super.name} — ${def.super.desc ?? ''}`, 210, 428, { size: 12, color: '#8be9fd', maxWidth: INFO_W });
     drawText(
       ctx,
       def.domain
         ? `DOMAIN (R): ${def.domain.name} — ${def.domain.desc}`
         : 'DOMAIN: — (R casts Simple Domain to survive enemy domains)',
       210, 450,
-      { size: 12, color: def.domain ? '#c58fff' : 'rgba(255,255,255,0.55)' },
+      { size: 12, color: def.domain ? '#c58fff' : 'rgba(255,255,255,0.55)', maxWidth: INFO_W },
     );
-    if (def.ultra) drawText(ctx, `ULTRA (H): ${def.ultra.name} — ${def.ultra.desc ?? ''}`, 210, 472, { size: 11.5, color: '#ffd166' });
+    if (def.ultra) drawText(ctx, `ULTRA (H): ${def.ultra.name} — ${def.ultra.desc ?? ''}`, 210, 472, { size: 11.5, color: '#ffd166', maxWidth: INFO_W });
+    if (def.tech) drawText(ctx, `TECH (I): ${def.tech.name} — ${def.tech.desc ?? ''}`, 210, 492, { size: 11.5, color: '#8be9fd', maxWidth: INFO_W });
     if (!unlocked) {
-      drawText(ctx, `🔒 UNLOCKS AT ACCOUNT LEVEL ${def.unlockLevel}`, 210, 494, { size: 13, color: '#ffb3bb' });
+      drawText(ctx, `🔒 UNLOCKS AT ACCOUNT LEVEL ${def.unlockLevel}`, W - 90, 380, { size: 13, color: '#ffb3bb', align: 'right' });
     }
 
-    drawText(ctx, '[Enter] Select   [Esc] Back', W - 40, H - 12, { size: 12, color: 'rgba(255,255,255,0.6)', align: 'right' });
+    const backHov = input.mouseIn(BACK_RECT.x, BACK_RECT.y, BACK_RECT.w, BACK_RECT.h);
+    drawText(ctx, '⬅ BACK', 40, H - 14, { size: 15, color: backHov ? '#ffd166' : 'rgba(255,255,255,0.75)' });
+    drawText(ctx, 'Click a fighter or [Enter] Select   [Esc] Back', W - 40, H - 12, { size: 12, color: 'rgba(255,255,255,0.6)', align: 'right' });
     effects.drawScreen(ctx);
   }
 }

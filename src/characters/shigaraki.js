@@ -1,10 +1,11 @@
 import { jumpVelForHeight } from '../engine/utils.js';
 import { GRAVITY } from '../engine/constants.js';
 import { effects } from '../engine/effects.js';
+import { Hazard } from '../entities/hazard.js';
 
 export default {
   id: 'shigaraki',
-  name: 'Tomura Shigaraki',
+  name: 'Shiggy Crumblehand',
   series: 'MHA',
   unlockLevel: 9,
   stats: { maxHp: 140, speed: 285, jumpVel: jumpVelForHeight(155, GRAVITY), weight: 'medium' },
@@ -54,6 +55,24 @@ export default {
         ctx.world.camera?.shake(9, 0.35);
       });
       effects.burst(f.cx, f.y + f.h, '#8a8578', 6, { speed: 60 });
+    },
+  },
+
+  tech: {
+    name: 'Crumbling Ground',
+    cost: 20,
+    cooldown: 7,
+    desc: 'Rot the floor ahead — standing in it stacks Decay.',
+    onUse(ctx) {
+      const f = ctx.f;
+      const gx = f.cx + f.facing * 110;
+      const gy = ctx.world.level.groundY?.(gx) ?? 500;
+      ctx.world.addHazard(new Hazard({
+        x: gx - 90, y: gy - 12, w: 180, h: 14, type: 'splat',
+        damage: 3, interval: 0.6, life: 4, color: '#8a8578', team: f.team,
+        status: { name: 'decay', dur: 4 },
+      }));
+      effects.burst(gx, gy, '#8a8578', 12, { speed: 140 });
     },
   },
 

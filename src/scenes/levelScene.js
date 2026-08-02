@@ -10,8 +10,8 @@ import { AIFighter } from '../entities/aiFighter.js';
 import { Hazard } from '../entities/hazard.js';
 import { byId } from '../characters/index.js';
 import { MINIONS } from '../data/minions.js';
-import { levelByN, LEVELS } from '../data/levels.js';
-import { difficultyFor } from '../data/progression.js';
+import { levelByN, LEVELS, EX_LEVELS } from '../data/levels.js';
+import { difficultyFor, TRIO_DIFFICULTIES, trioDifficultyById } from '../data/progression.js';
 import { loadSave, writeSave } from '../engine/save.js';
 import { audio } from '../engine/audio.js';
 import { drawHud } from '../ui/hud.js';
@@ -21,7 +21,7 @@ import { Menu } from '../ui/menu.js';
 const PARTICLE_COLORS = { petal: '#e8a0b8', ember: '#ff9a44', ash: '#9a9a9a' };
 
 const BOSS_RUSH_LEVEL = {
-  n: 13,
+  n: 100, // out of the campaign range — 13 is the Shibuya Incident finale
   name: 'Boss Rush',
   bossId: null,
   width: 1600,
@@ -47,6 +47,8 @@ export class LevelScene extends Scene {
     this.params = params;
     this.bossRush = !!params.bossRush;
     const def = this.bossRush ? BOSS_RUSH_LEVEL : levelByN[params.levelN];
+    // trio finale: pin the difficulty id so victory/defeat/retry all agree on it
+    if (def?.trio) params.difficulty = trioDifficultyById[params.difficulty] ? params.difficulty : TRIO_DIFFICULTIES[1].id;
     // runtime copy: one-way platforms are stateful (crumble)
     this.def = def;
     // deep-copy geometry: walls and terrain destruction mutate it at runtime
@@ -124,7 +126,7 @@ export class LevelScene extends Scene {
     this.ambientT = 0;
 
     // boss rush queue
-    this.rushQueue = this.bossRush ? LEVELS.map((l) => l.bossId) : null;
+    this.rushQueue = this.bossRush ? [...LEVELS, ...EX_LEVELS].map((l) => l.bossId) : null;
     this.rushIndex = 0;
 
     if (fromBoss || this.bossRush) this.startBossFight();
@@ -169,25 +171,48 @@ export class LevelScene extends Scene {
     this.camera.lockTo(def.arena.x, arenaEnd);
     this.world.boundsMin = def.arena.x;
     this.world.boundsMax = arenaEnd;
-    this.spawnBoss(this.bossRush ? this.rushQueue[0] : def.bossId);
+    if (def.trio) this.spawnTrio();
+    else this.spawnBoss(this.bossRush ? this.rushQueue[0] : def.bossId);
+  }
+
+  // Boss Geto arrives with curses already banked so his summoner kit works
+  seedBossKit(boss) {
+    if (boss.def.id === 'geto') {
+      boss.mem.stored = [
+        { def: MINIONS.wisp, name: MINIONS.wisp.name },
+        { def: MINIONS.wisp, name: MINIONS.wisp.name },
+      ];
+    }
+  }
+
+  // The Shibuya Incident: every boss at once, tuned by the chosen tier.
+  spawnTrio() {
+    const tier = trioDifficultyById[this.params.difficulty] ?? TRIO_DIFFICULTIES[1];
+    const { arena } = this.def;
+    this.world.bosses = this.def.bossIds.map((id, i) => {
+      const cdef = byId[id];
+      const boss = new AIFighter(cdef, arena.x + arena.w * (0.42 + i * 0.2), 300, 'enemy', {
+        brain: 'boss', difficulty: tier.ai, hpMult: tier.ai.hpMult, isBoss: true, aggroed: true, facing: -1,
+      });
+      this.seedBossKit(boss);
+      this.world.addFighter(boss);
+      return boss;
+    });
+    this.bossIntroT = 2.4;
+    effects.showBanner('THE SHIBUYA INCIDENT', '#ff3860',
+      `${this.world.bosses.map((b) => b.def.name.toUpperCase()).join('  ×  ')}  —  ${tier.name}`, 2.4);
   }
 
   spawnBoss(bossId) {
     const cdef = byId[bossId];
-    const n = this.bossRush ? Math.min(12, 3 + this.rushIndex) : this.def.n;
+    const n = this.bossRush ? Math.min(19, 3 + this.rushIndex) : this.def.n;
     const diff = difficultyFor(n);
     const boss = new AIFighter(cdef, this.def.bossX, 300, 'enemy', {
       brain: 'boss', difficulty: diff, hpMult: diff.hpMult, isBoss: true, aggroed: true, facing: -1,
     });
     this.world.addFighter(boss);
     this.world.boss = boss;
-    // Boss Geto arrives with curses already banked so his summoner kit works
-    if (bossId === 'geto') {
-      boss.mem.stored = [
-        { def: MINIONS.wisp, name: MINIONS.wisp.name },
-        { def: MINIONS.wisp, name: MINIONS.wisp.name },
-      ];
-    }
+    this.seedBossKit(boss);
     this.bossIntroT = 2.2;
     effects.showBanner(cdef.name.toUpperCase(), '#ff5566', this.bossRush ? `BOSS ${this.rushIndex + 1} / ${this.rushQueue.length}` : 'BOSS BATTLE', 2);
     return boss;
@@ -244,11 +269,23 @@ export class LevelScene extends Scene {
       this.startBossFight();
     }
     this.bossIntroT = Math.max(0, this.bossIntroT - dt);
-    // no-hit tracking: any HP lost while the boss lives voids the bonus
-    if (this.bossStarted && this.world.boss?.alive) {
+    // no-hit tracking: any HP lost while a boss lives voids the bonus
+    const anyBossAlive = this.world.bosses ? this.world.bosses.some((b) => b.alive) : this.world.boss?.alive;
+    if (this.bossStarted && anyBossAlive) {
       if (this.bossFightHp === undefined) this.bossFightHp = this.player.hp;
       if (this.player.hp < this.bossFightHp) this.noHitBoss = false;
       this.bossFightHp = this.player.hp;
+    }
+
+    // trio finale: call out each boss as they fall
+    if (this.world.bosses) {
+      for (const b of this.world.bosses) {
+        if (!b.alive && !b.fallCalled) {
+          b.fallCalled = true;
+          const left = this.world.bosses.filter((o) => o.alive).length;
+          if (left > 0) effects.toast(`${b.def.name.toUpperCase()} IS DOWN — ${left} REMAIN${left === 1 ? 'S' : ''}!`);
+        }
+      }
     }
 
     // outcomes
@@ -263,7 +300,9 @@ export class LevelScene extends Scene {
         this.state = 'won';
         this.stateT = 0;
         effects.slowmo(0.9);
-      } else if (this.bossStarted && this.world.boss && !this.world.boss.alive) {
+      } else if (this.bossStarted && (this.world.bosses
+        ? this.world.bosses.every((b) => !b.alive)
+        : this.world.boss && !this.world.boss.alive)) {
         if (this.bossRush && this.rushIndex < this.rushQueue.length - 1) {
           this.rushIndex++;
           this.world.boss = null;
@@ -292,6 +331,7 @@ export class LevelScene extends Scene {
           levelN: this.def.n,
           charId: this.params.charId,
           bossRush: this.bossRush,
+          difficulty: this.params.difficulty,
           minionXp: this.world.xpEarned,
           noHit: this.noHitBoss,
         });
@@ -300,6 +340,7 @@ export class LevelScene extends Scene {
           levelN: this.def.n,
           charId: this.params.charId,
           bossRush: this.bossRush,
+          difficulty: this.params.difficulty,
           fromCheckpoint: this.checkpointHit,
           fromBoss: this.bossStarted,
         });
@@ -405,7 +446,7 @@ export class LevelScene extends Scene {
 
   updatePause(dt) {
     if (this.showMoves) {
-      if (input.pressed('back') || input.pressed('confirm') || input.pressed('pause')) this.showMoves = false;
+      if (input.pressed('back') || input.pressed('confirm') || input.pressed('pause') || input.clicked()) this.showMoves = false;
       return;
     }
     if (input.pressed('pause')) { this.paused = false; return; }
@@ -413,7 +454,7 @@ export class LevelScene extends Scene {
     if (r.action === 'back') { this.paused = false; return; }
     if (r.action !== 'confirm') return;
     if (r.index === 0) this.paused = false;
-    else if (r.index === 1) this.game.changeScene('level', { levelN: this.def.n, charId: this.params.charId, bossRush: this.bossRush });
+    else if (r.index === 1) this.game.changeScene('level', { levelN: this.def.n, charId: this.params.charId, bossRush: this.bossRush, difficulty: this.params.difficulty });
     else if (r.index === 2) this.showMoves = true;
     else if (r.index === 3 || r.index === 4) {
       const key = r.index === 3 ? 'sound' : 'voice';
@@ -534,18 +575,20 @@ export class LevelScene extends Scene {
       panel(ctx, 160, 100, W - 320, 320);
       drawText(ctx, `${def.name.toUpperCase()} — MOVE LIST`, W / 2, 140, { size: 20, color: '#ffd166', align: 'center' });
       let y = 180;
-      drawText(ctx, `BASIC (J/Z): ${def.basic.name}`, 200, y, { size: 14, color: '#fff' }); y += 26;
+      const MOVE_W = W - 160 - 200 - 16; // panel right edge minus text x, minus padding
+      drawText(ctx, `BASIC (J/Z): ${def.basic.name}`, 200, y, { size: 14, color: '#fff', maxWidth: MOVE_W }); y += 26;
       for (const m of def.moves ?? []) {
-        drawText(ctx, `• ${m.name}: ${m.desc}`, 210, y, { size: 12, color: 'rgba(255,255,255,0.8)' });
+        drawText(ctx, `• ${m.name}: ${m.desc}`, 210, y, { size: 12, color: 'rgba(255,255,255,0.8)', maxWidth: MOVE_W - 10 });
         y += 22;
       }
-      drawText(ctx, `SUPER (K/X): ${def.super.name} — ${def.super.desc ?? ''}`, 200, y + 6, { size: 13, color: '#8be9fd' }); y += 32;
-      if (def.special?.name) { drawText(ctx, `SPECIAL (L/C): ${def.special.name}`, 200, y, { size: 13, color: '#6fe3a0' }); y += 26; }
-      if (def.ultra?.name) { drawText(ctx, `ULTRA (H): ${def.ultra.name}`, 200, y, { size: 13, color: '#ffd166' }); y += 26; }
+      drawText(ctx, `SUPER (K/X): ${def.super.name} — ${def.super.desc ?? ''}`, 200, y + 6, { size: 13, color: '#8be9fd', maxWidth: MOVE_W }); y += 32;
+      if (def.special?.name) { drawText(ctx, `SPECIAL (L/C): ${def.special.name}`, 200, y, { size: 13, color: '#6fe3a0', maxWidth: MOVE_W }); y += 26; }
+      if (def.ultra?.name) { drawText(ctx, `ULTRA (H): ${def.ultra.name}`, 200, y, { size: 13, color: '#ffd166', maxWidth: MOVE_W }); y += 26; }
+      if (def.tech?.name) { drawText(ctx, `TECH (I): ${def.tech.name} — ${def.tech.desc ?? ''}`, 200, y, { size: 12, color: '#8be9fd', maxWidth: MOVE_W }); y += 24; }
       drawText(
         ctx,
         def.domain ? `DOMAIN (R): ${def.domain.name} — ${def.domain.desc}` : 'DOMAIN (R): Simple Domain (needs 50 gauge, only inside an enemy domain)',
-        200, y, { size: 13, color: '#c58fff' },
+        200, y, { size: 13, color: '#c58fff', maxWidth: MOVE_W },
       );
       drawText(ctx, '[Esc] Back', W / 2, 400, { size: 12, color: 'rgba(255,255,255,0.6)', align: 'center' });
       return;

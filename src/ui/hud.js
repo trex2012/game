@@ -57,9 +57,23 @@ export function drawHud(ctx, world) {
   // character-specific pips (Geto storage, AFO stolen power...)
   p.def.hooks?.hudExtra?.(ctx, p, 66, 58);
 
-  // boss bar
-  const boss = world.boss;
-  if (boss && boss.alive) {
+  // boss bar (trio finale stacks one compact bar per boss, top-right)
+  if (world.bosses) {
+    world.bosses.forEach((b, i) => {
+      const y = 16 + i * 26;
+      drawText(ctx, b.def.name.toUpperCase(), W - 208, y + 8, {
+        size: 10, color: b.alive ? '#ffb3bb' : 'rgba(255,255,255,0.35)', align: 'right',
+      });
+      drawBar(ctx, W - 200, y, 170, 8, Math.max(0, b.hp / b.maxHp), '#e0443e');
+      if (b.alive) {
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillRect(W - 200 + 170 * 0.5 - 1, y - 1, 2, 10); // phase-2 tick
+      } else {
+        drawText(ctx, '✖', W - 22, y + 8, { size: 10, color: '#6fe3a0' });
+      }
+    });
+  } else if (world.boss && world.boss.alive) {
+    const boss = world.boss;
     drawText(ctx, boss.def.name.toUpperCase(), W / 2, 26, { size: 15, color: '#ffb3bb', align: 'center' });
     drawBar(ctx, W / 2 - 180, 32, 360, 11, Math.max(0, boss.hp / boss.maxHp), '#e0443e');
     ctx.fillStyle = 'rgba(255,255,255,0.9)';

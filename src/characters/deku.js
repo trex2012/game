@@ -4,7 +4,7 @@ import { effects } from '../engine/effects.js';
 
 export default {
   id: 'deku',
-  name: 'Deku',
+  name: 'Dekoo Greensmash',
   series: 'MHA',
   unlockLevel: 1,
   stats: { maxHp: 120, speed: 310, jumpVel: jumpVelForHeight(190, GRAVITY), weight: 'light' },
@@ -48,6 +48,19 @@ export default {
           effects.burst(f.cx + f.facing * 26, f.cy, '#7CFC8a', 4, { speed: 140 });
         });
       }
+    },
+  },
+
+  tech: {
+    name: 'Full Cowling: Burst',
+    cost: 15,
+    cooldown: 5,
+    desc: 'An omnidirectional wind burst that blasts everyone off you.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.melee({ damage: 8, w: 150, h: 110, centered: true, life: 0.12, kx: 420, ky: 260, hitstun: 0.3, tag: 'super' });
+      effects.ring(f.cx, f.cy - 8, '#7CFC8a', 75, 0.35);
+      effects.burst(f.cx, f.cy, '#7CFC8a', 12, { speed: 280 });
     },
   },
 

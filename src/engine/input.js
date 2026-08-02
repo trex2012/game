@@ -1,3 +1,5 @@
+import { W, H } from './constants.js';
+
 // Keyboard -> named actions. Game code only ever asks about actions.
 const MAP = {
   left: ['ArrowLeft', 'KeyA'],
@@ -10,6 +12,7 @@ const MAP = {
   special: ['KeyL', 'KeyC'],
   domain: ['KeyR'],
   ultra: ['KeyH'],
+  tech: ['KeyI'],
   pause: ['Escape', 'KeyP'],
   confirm: ['Enter', 'Space', 'KeyJ', 'KeyZ'],
   back: ['Escape', 'Backspace'],
@@ -25,6 +28,10 @@ class Input {
     this.doubleTaps = new Set(); // 'left'/'right' double-tap edges
     this.lastTap = { left: -1, right: -1 };
     this.now = 0;
+    // Mouse in logical W x H coords. click/moved are edges cleared each step;
+    // hot = "hovering something clickable this step" -> pointer cursor.
+    this.mouse = { x: -1000, y: -1000, click: false, moved: false, hot: false };
+    this._canvas = null;
   }
 
   attach(target) {
@@ -35,6 +42,42 @@ class Input {
     });
     target.addEventListener('keyup', (e) => this.simKeyUp(e.code));
     target.addEventListener('blur', () => this.held.clear());
+  }
+
+  attachMouse(canvas) {
+    this._canvas = canvas;
+    const toLogical = (e) => {
+      const r = canvas.getBoundingClientRect();
+      return { x: ((e.clientX - r.left) * W) / r.width, y: ((e.clientY - r.top) * H) / r.height };
+    };
+    canvas.addEventListener('pointermove', (e) => {
+      const p = toLogical(e);
+      if (p.x !== this.mouse.x || p.y !== this.mouse.y) this.mouse.moved = true;
+      this.mouse.x = p.x;
+      this.mouse.y = p.y;
+    });
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      const p = toLogical(e);
+      this.mouse.x = p.x;
+      this.mouse.y = p.y;
+      this.mouse.click = true;
+    });
+  }
+
+  clicked() {
+    return this.mouse.click;
+  }
+
+  mouseIn(x, y, w, h) {
+    const m = this.mouse;
+    return m.x >= x && m.x < x + w && m.y >= y && m.y < y + h;
+  }
+
+  mouseInCircle(cx, cy, r) {
+    const dx = this.mouse.x - cx;
+    const dy = this.mouse.y - cy;
+    return dx * dx + dy * dy <= r * r;
   }
 
   // Also used by the touch overlay to synthesize presses.
@@ -73,6 +116,13 @@ class Input {
     this.now += dt;
     this.edges.clear();
     this.doubleTaps.clear();
+    this.mouse.click = false;
+    this.mouse.moved = false;
+    if (this._canvas) {
+      const want = this.mouse.hot ? 'pointer' : '';
+      if (this._canvas.style.cursor !== want) this._canvas.style.cursor = want;
+    }
+    this.mouse.hot = false;
   }
 }
 

@@ -290,12 +290,18 @@ export class AIFighter extends Fighter {
           return;
         }
       }
-      // ...and the H tech occasionally, when flush with energy
+      // ...and the H ultra / I tech occasionally, when flush with energy
       if (this.def.ultra && this.canAct() && this.bossState !== 'retreat' &&
           Math.random() < D.superChance * 0.4 && this.energy >= (this.def.ultra.cost ?? 0) + 20) {
         this.facing = sign(dx || 1);
         this.mem.aimTarget = tgt;
         this.tryUltra();
+      }
+      if (this.def.tech && this.canAct() && this.bossState !== 'retreat' &&
+          Math.random() < D.superChance * 0.35 && this.energy >= (this.def.tech.cost ?? 0) + 15) {
+        this.facing = sign(dx || 1);
+        this.mem.aimTarget = tgt;
+        this.tryTech();
       }
       // summoners keep their special running
       if (this.def.ai?.useSpecial && this.canAct() && Math.random() < 0.5) {

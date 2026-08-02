@@ -1,7 +1,12 @@
 export function drawText(ctx, text, x, y, opts = {}) {
-  const { size = 16, color = '#fff', align = 'left', outline = true, alpha = 1, bold = true } = opts;
+  const { size = 16, color = '#fff', align = 'left', outline = true, alpha = 1, bold = true, maxWidth = 0 } = opts;
   ctx.globalAlpha = alpha;
   ctx.font = `${bold ? 'bold ' : ''}${size}px monospace`;
+  // shrink-to-fit: long technique descriptions must never run off the page
+  if (maxWidth > 0) {
+    const w = ctx.measureText(text).width;
+    if (w > maxWidth) ctx.font = `${bold ? 'bold ' : ''}${Math.max(8, size * (maxWidth / w))}px monospace`;
+  }
   ctx.textAlign = align;
   ctx.textBaseline = 'alphabetic';
   if (outline) {

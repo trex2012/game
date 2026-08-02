@@ -62,7 +62,7 @@ function convertTarget(ctx, target) {
 
 export default {
   id: 'mahito',
-  name: 'Mahito',
+  name: 'Patchface Soulsmith',
   series: 'JJK',
   unlockLevel: 6,
   stats: { maxHp: 140, speed: 300, jumpVel: jumpVelForHeight(175, GRAVITY), weight: 'medium' },
@@ -158,6 +158,23 @@ export default {
         },
       });
       if (f === ctx.world.player) effects.toast(`THREW ${rec.name.toUpperCase()} (${f.mem.stored.length} LEFT)`);
+    },
+  },
+
+  // I — spikes erupt from his reshaped body in every direction
+  tech: {
+    name: 'Body Repel',
+    cost: 20,
+    cooldown: 6,
+    desc: 'Blades of his own transfigured flesh burst out in all directions.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.melee({ damage: 14, w: 160, h: 120, centered: true, life: 0.14, kx: 340, ky: 220, hitstun: 0.4, tag: 'super' });
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        effects.slash(f.cx, f.cy - 8, f.cx + Math.cos(a) * 75, f.cy - 8 + Math.sin(a) * 55, '#9aa8ba');
+      }
+      effects.ring(f.cx, f.cy - 8, '#7d8ca3', 80, 0.3);
     },
   },
 

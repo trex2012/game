@@ -4,7 +4,7 @@ import { effects } from '../engine/effects.js';
 
 export default {
   id: 'naoya',
-  name: 'Naoya Zenin',
+  name: 'Zoomboy Zenny',
   series: 'JJK',
   unlockLevel: 4,
   stats: { maxHp: 120, speed: 360, jumpVel: jumpVelForHeight(160, GRAVITY), weight: 'light' },
@@ -70,6 +70,19 @@ export default {
           ctx.melee({ damage: 8, w: 50, h: 44, kx: 120, ky: 80, hitstun: 0.25, tag: 'super' });
         });
       }
+    },
+  },
+
+  tech: {
+    name: 'Retreat Frame',
+    cost: 0,
+    cooldown: 4,
+    desc: 'Free backward blink with i-frames — you were never there.',
+    onUse(ctx) {
+      const f = ctx.f;
+      effects.ghost({ x: f.x, y: f.y, w: f.w, h: f.h, color: '#d8bd7f' });
+      ctx.blink(-130 * f.facing);
+      f.invuln = Math.max(f.invuln, 0.3);
     },
   },
 

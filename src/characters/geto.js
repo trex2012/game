@@ -25,7 +25,7 @@ function devourAll(ctx) {
 
 export default {
   id: 'geto',
-  name: 'Suguru Geto',
+  name: 'Geeto Curseswallow',
   series: 'JJK',
   unlockLevel: 8,
   stats: { maxHp: 185, speed: 280, jumpVel: jumpVelForHeight(160, GRAVITY), weight: 'medium' },
@@ -128,6 +128,18 @@ export default {
         ctx.world.camera?.shake(7, 0.3);
       });
       if (n === 0) effects.toast('UZUMAKI (NO CURSES STORED — WEAK)');
+    },
+  },
+
+  // I — a swirling screen of curses that eats incoming projectiles
+  tech: {
+    name: 'Curse Screen',
+    cost: 15,
+    cooldown: 7,
+    desc: '1.5s swirl of curses that devours incoming projectiles.',
+    onUse(ctx) {
+      ctx.f.mem.screenT = 1.5;
+      effects.ring(ctx.f.cx, ctx.f.cy, '#8e6bb8', 55, 0.4);
     },
   },
 
@@ -244,6 +256,16 @@ export default {
   },
 
   hooks: {
+    onUpdate(ctx, dt) {
+      ctx.f.mem.screenT = Math.max(0, (ctx.f.mem.screenT ?? 0) - dt);
+    },
+    onIncomingHit(ctx, hit) {
+      if ((ctx.f.mem.screenT ?? 0) > 0 && !hit.isMelee && !hit.bypassesBarrier && !hit.domainTick) {
+        effects.burst(ctx.f.cx + ctx.f.facing * 20, ctx.f.cy, '#8e6bb8', 5, { speed: 100 });
+        return false; // a curse ate that one
+      }
+      return true;
+    },
     onKill(ctx, target) {
       const f = ctx.f;
       // slaying a boss lets Geto claim its curse — spent with H

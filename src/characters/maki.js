@@ -4,7 +4,7 @@ import { effects } from '../engine/effects.js';
 
 export default {
   id: 'maki',
-  name: 'Maki Zenin',
+  name: 'Mackie Zenpole',
   series: 'JJK',
   unlockLevel: 2,
   stats: { maxHp: 110, speed: 340, jumpVel: jumpVelForHeight(180, GRAVITY), weight: 'light' },
@@ -55,6 +55,21 @@ export default {
             effects.ring(f.cx + f.facing * 50, f.y + f.h, '#caa46a', 90, 0.35);
             ctx.world.camera?.shake(6, 0.25);
           }
+        });
+      }
+    },
+  },
+
+  tech: {
+    name: 'Cursed Tool Volley',
+    cost: 15,
+    cooldown: 5,
+    desc: 'Three fast kunai from her endless arsenal.',
+    onUse(ctx) {
+      for (let i = 0; i < 3; i++) {
+        ctx.schedule(i * 0.09, () => {
+          if (!ctx.f.alive) return;
+          ctx.projectile({ damage: 5, speed: 620, vy: (i - 1) * 40, range: 340, w: 14, h: 5, kx: 100, ky: 60, hitstun: 0.15, color: '#c8ccd4' });
         });
       }
     },

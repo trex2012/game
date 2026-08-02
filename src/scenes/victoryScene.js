@@ -6,7 +6,7 @@ import { drawPortrait } from '../entities/chibi.js';
 import { byId } from '../characters/index.js';
 import { levelByN } from '../data/levels.js';
 import { loadSave, writeSave } from '../engine/save.js';
-import { levelForXp, xpIntoLevel, unlocksAtLevel } from '../data/progression.js';
+import { levelForXp, xpIntoLevel, unlocksAtLevel, trioDifficultyById } from '../data/progression.js';
 import { effects } from '../engine/effects.js';
 import { audio } from '../engine/audio.js';
 import { rand } from '../engine/utils.js';
@@ -22,13 +22,16 @@ export class VictoryScene extends Scene {
       this.gained = 300 + (params.minionXp ?? 0);
       this.firstClear = false;
       this.levelDef = null;
+      this.tier = null;
     } else {
       this.levelDef = levelByN[params.levelN];
       this.firstClear = !save.clearedLevels[params.levelN];
+      this.tier = this.levelDef.trio ? trioDifficultyById[params.difficulty] : null;
       this.gained =
         (this.firstClear ? this.levelDef.xpFirst : this.levelDef.xpReplay) +
         (params.minionXp ?? 0) +
-        (params.noHit ? 25 : 0);
+        (params.noHit ? 25 : 0) +
+        (this.tier?.xpBonus ?? 0);
     }
 
     // commit progress BEFORE the fanfare — closing the tab keeps it
@@ -38,6 +41,7 @@ export class VictoryScene extends Scene {
         const rec = s.clearedLevels[this.levelDef.n] ?? { clears: 0, bestNoHit: false };
         rec.clears++;
         rec.bestNoHit = rec.bestNoHit || !!params.noHit;
+        if (this.tier) rec.diffs = { ...rec.diffs, [this.tier.id]: true }; // per-difficulty trio clears
         s.clearedLevels[this.levelDef.n] = rec;
       }
     });
@@ -73,7 +77,7 @@ export class VictoryScene extends Scene {
       if (this.t > 2.2) { this.stage = 3; this.t = 0; }
     }
 
-    if (input.pressed('confirm')) {
+    if (input.pressed('confirm') || input.clicked()) {
       if (this.stage === 0) { this.shownXp = this.gained; }
       else if (this.stage < 3) { this.stage++; this.t = 0; }
       else this.game.changeScene('levelSelect');
@@ -81,6 +85,7 @@ export class VictoryScene extends Scene {
     if (this.stage === 3 && input.pressed('special')) {
       this.game.changeScene('level', {
         levelN: this.params.levelN, charId: this.params.charId, bossRush: this.params.bossRush,
+        difficulty: this.params.difficulty,
       });
     }
   }
@@ -94,7 +99,10 @@ export class VictoryScene extends Scene {
     effects.drawWorld(ctx);
 
     drawText(ctx, '★ VICTORY ★', W / 2, 110, { size: 44, color: '#ffd166', align: 'center' });
-    if (this.levelDef?.bossId) {
+    if (this.levelDef?.trio) {
+      const names = this.levelDef.bossIds.map((id) => byId[id].name.toUpperCase()).join(', ');
+      drawText(ctx, `${names} — ALL DEFEATED! SHIBUYA IS SAVED!`, W / 2, 150, { size: 15, color: '#fff', align: 'center' });
+    } else if (this.levelDef?.bossId) {
       drawText(ctx, `${byId[this.levelDef.bossId].name.toUpperCase()} HAS BEEN DEFEATED!`, W / 2, 150, {
         size: 16, color: '#fff', align: 'center',
       });
@@ -109,6 +117,7 @@ export class VictoryScene extends Scene {
     if (this.levelDef) parts.push(this.firstClear ? `first clear +${this.levelDef.xpFirst}` : `replay +${this.levelDef.xpReplay}`);
     if (this.params.minionXp) parts.push(`minions +${this.params.minionXp}`);
     if (this.params.noHit) parts.push('no-hit boss +25');
+    if (this.tier?.xpBonus) parts.push(`${this.tier.name.toLowerCase()} bonus +${this.tier.xpBonus}`);
     drawText(ctx, parts.join('   '), W / 2, 236, { size: 12, color: 'rgba(255,255,255,0.6)', align: 'center' });
 
     const save = loadSave();

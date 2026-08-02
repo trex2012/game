@@ -4,7 +4,7 @@ import { effects } from '../engine/effects.js';
 
 export default {
   id: 'choso',
-  name: 'Choso',
+  name: 'Choco Bloodbro',
   series: 'JJK',
   unlockLevel: 5,
   stats: { maxHp: 150, speed: 280, jumpVel: jumpVelForHeight(150, GRAVITY), weight: 'medium' },
@@ -59,6 +59,24 @@ export default {
         }
       }, { tell: false });
       effects.burst(f.cx + f.facing * 16, f.cy - 6, '#c11f3e', 5, { speed: 60 });
+    },
+  },
+
+  tech: {
+    name: 'Supernova',
+    cost: 20,
+    cooldown: 6,
+    desc: 'Orbiting blood orbs detonate around him, slowing everyone caught.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.melee({
+        damage: 12, w: 170, h: 120, centered: true, life: 0.14, kx: 260, ky: 160, hitstun: 0.35, tag: 'super',
+        status: { name: 'slow', dur: 1.5, params: { factor: 0.7 } },
+      });
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        effects.burst(f.cx + Math.cos(a) * 55, f.cy - 8 + Math.sin(a) * 40, '#a41f36', 5, { speed: 160 });
+      }
     },
   },
 

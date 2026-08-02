@@ -83,7 +83,7 @@ const nue = {
 
 const shadowClone = {
   id: 'shadow-clone',
-  name: 'Shadow Megumi',
+  name: 'Shadow Gumi',
   minionTier: true,
   stats: { maxHp: 50, speed: 280, jumpVel: jumpVelForHeight(160, GRAVITY), weight: 'light' },
   brain: { mode: 'ground', sight: 340, range: 60, windup: 0.2, recover: 0.5, leash: 600 },
@@ -109,7 +109,7 @@ function spawnPet(ctx, type, buffed = false) {
 
 export default {
   id: 'megumi',
-  name: 'Megumi Fushiguro',
+  name: 'Gumi Shadowhound',
   series: 'JJK',
   unlockLevel: 3,
   stats: { maxHp: 120, speed: 290, jumpVel: jumpVelForHeight(165, GRAVITY), weight: 'medium' },
@@ -199,6 +199,19 @@ export default {
           effects.slash(tx, ty, e.cx, e.cy, '#ffe066');
         }
       });
+    },
+  },
+
+  tech: {
+    name: 'Toad: Tongue Lash',
+    cost: 15,
+    cooldown: 5,
+    desc: 'A shadow toad yanks the target straight to you.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.melee({ damage: 8, w: 190, h: 36, ox: 100, kx: 320, ky: 40, hitstun: 0.35, pullTo: true });
+      effects.slash(f.cx + f.facing * 10, f.cy, f.cx + f.facing * 190, f.cy, '#6a9a5c');
+      effects.burst(f.cx + f.facing * 24, f.y + f.h - 8, '#6a9a5c', 6, { speed: 100 });
     },
   },
 

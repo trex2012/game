@@ -31,6 +31,7 @@ export class World {
     this.boundsMin = 0;
     this.boundsMax = level.width;
     this.boss = null;
+    this.bosses = null; // trio finale: all simultaneous bosses, kept for the HUD
     this.xpEarned = 0;
     this.combo = 0;
     this.comboT = 0;
@@ -277,7 +278,7 @@ export class World {
       if (d.t <= 0 || !d.owner.alive) this.endDomain();
     }
 
-    this.fighters = this.fighters.filter((f) => f.alive || f === this.player || f === this.boss);
+    this.fighters = this.fighters.filter((f) => f.alive || f === this.player || f === this.boss || this.bosses?.includes(f));
     this.projectiles = this.projectiles.filter((p) => p.alive);
     this.hazards = this.hazards.filter((h) => h.alive);
   }

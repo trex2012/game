@@ -7,7 +7,7 @@ const PROJECTILE_R = 100;
 
 export default {
   id: 'gojo',
-  name: 'Satoru Gojo',
+  name: 'Gojoe Sixeyes',
   series: 'JJK',
   unlockLevel: 11,
   stats: { maxHp: 160, speed: 330, jumpVel: jumpVelForHeight(185, GRAVITY), weight: 'medium' },
@@ -93,6 +93,31 @@ export default {
         ctx2d.fillRect(x, y, i % 5 === 0 ? 2.5 : 1.5, i % 5 === 0 ? 2.5 : 1.5);
       }
       ctx2d.globalAlpha = 1;
+    },
+  },
+
+  tech: {
+    name: 'Lapse: Blue',
+    cost: 20,
+    cooldown: 6,
+    desc: 'A point of infinite attraction — drags everything nearby into it.',
+    onUse(ctx) {
+      const f = ctx.f;
+      const target = f.mem.aimTarget?.alive ? f.mem.aimTarget : ctx.nearestEnemy(400);
+      const bx = target ? target.cx : f.cx + f.facing * 180;
+      const by = target ? target.cy : f.cy - 20;
+      effects.ring(bx, by, '#3aa0ff', 60, 0.5);
+      ctx.schedule(0.2, () => {
+        for (const e of ctx.enemies()) {
+          const d = Math.hypot(e.cx - bx, e.cy - by);
+          if (d > 190) continue;
+          e.vx = (bx - e.cx) * 6;
+          e.vy = (by - e.cy) * 4 - 60;
+          e.receiveHit({ damage: 10 * f.dmgMult, kx: 0, ky: 0, hitstun: 0.35, isMelee: false, tag: 'super' }, f, ctx.world);
+        }
+        effects.burst(bx, by, ['#3aa0ff', '#9fd8ff'], 16, { speed: 200 });
+        effects.ring(bx, by, '#9fd8ff', 100, 0.35);
+      });
     },
   },
 

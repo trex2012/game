@@ -28,6 +28,7 @@ const BUTTONS = [
   { code: 'KeyL', label: '◈', hint: 'SPCL', css: { right: '18px', bottom: '104px' }, size: 60 },
   { code: 'KeyR', label: 'R', hint: 'DOMAIN', css: { right: '66px', bottom: '178px' }, size: 52 },
   { code: 'KeyH', label: '✺', hint: 'ULTRA', css: { right: '132px', bottom: '184px' }, size: 46 },
+  { code: 'KeyI', label: '❖', hint: 'TECH', css: { right: '196px', bottom: '160px' }, size: 44 },
   // pause (top-right)
   { code: 'Escape', label: '❚❚', css: { right: '14px', top: '14px' }, size: 40 },
 ];

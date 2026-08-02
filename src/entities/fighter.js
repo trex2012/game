@@ -26,7 +26,7 @@ export class Fighter extends Entity {
     this.hp = this.maxHp;
     this.energy = 0;
     this.domainCharge = 0;
-    this.cooldowns = { basic: 0, super: 0, special: 0, ultra: 0 };
+    this.cooldowns = { basic: 0, super: 0, special: 0, ultra: 0, tech: 0 };
     this.statuses = {};
     this.buffs = {};
     this.mem = {};
@@ -250,6 +250,23 @@ export class Fighter extends Entity {
     this.attackT = 0.3;
     audio.say(this.def.ultra.name, this.def.id, { interrupt: false });
     this.def.ultra.onUse(this.ctx);
+    return true;
+  }
+
+  // I key — a second tech move (Mahito's Body Repel and friends).
+  tryTech() {
+    if (!this.def.tech || !this.canAct() || this.cooldowns.tech > 0) return false;
+    if (this.powerStolenT > 0) return false;
+    const cost = this.def.tech.cost ?? 0;
+    if (cost > 0 && this.energy < cost) {
+      if (this === this.world?.player) effects.toast('NOT ENOUGH ENERGY');
+      return false;
+    }
+    this.energy -= cost;
+    this.cooldowns.tech = this.def.tech.cooldown ?? 1;
+    this.attackT = 0.25;
+    audio.say(this.def.tech.name, this.def.id, { interrupt: false });
+    this.def.tech.onUse(this.ctx);
     return true;
   }
 

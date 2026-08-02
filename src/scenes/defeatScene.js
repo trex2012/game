@@ -23,11 +23,11 @@ export class DefeatScene extends Scene {
       const p = this.params;
       if (r.index === 0) {
         this.game.changeScene('level', {
-          levelN: p.levelN, charId: p.charId, bossRush: p.bossRush,
+          levelN: p.levelN, charId: p.charId, bossRush: p.bossRush, difficulty: p.difficulty,
           fromCheckpoint: p.fromCheckpoint, fromBoss: p.fromBoss,
         });
       } else if (r.index === 1) {
-        this.game.changeScene('charSelect', p.bossRush ? { bossRush: true } : { levelN: p.levelN });
+        this.game.changeScene('charSelect', p.bossRush ? { bossRush: true } : { levelN: p.levelN, difficulty: p.difficulty });
       } else {
         this.game.changeScene('levelSelect');
       }

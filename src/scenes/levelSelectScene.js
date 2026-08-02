@@ -4,12 +4,14 @@ import { input } from '../engine/input.js';
 import { drawText, drawBar, panel } from '../ui/text.js';
 import { drawPortrait } from '../entities/chibi.js';
 import { byId } from '../characters/index.js';
-import { LEVELS, FARM_LEVEL, NEST_LEVEL } from '../data/levels.js';
+import { LEVELS, EX_LEVELS, FARM_LEVEL, NEST_LEVEL, SHIBUYA_LEVEL } from '../data/levels.js';
 import { loadSave, writeSave } from '../engine/save.js';
-import { levelForXp, xpIntoLevel, MAX_LEVEL } from '../data/progression.js';
+import { levelForXp, xpIntoLevel, MAX_LEVEL, TRIO_DIFFICULTIES } from '../data/progression.js';
 import { effects } from '../engine/effects.js';
+import { Menu } from '../ui/menu.js';
 
-const NODES_PER_ROW = 6;
+const NODES_PER_ROW = 8;
+const BACK_RECT = { x: 28, y: H - 38, w: 116, h: 32 };
 
 export class LevelSelectScene extends Scene {
   enter() {
@@ -17,6 +19,7 @@ export class LevelSelectScene extends Scene {
     this.cursor = Math.min(save.lastLevel, LEVELS.length) - 1;
     this.t = 0;
     this.denyT = 0;
+    this.diffMenu = null; // Shibuya Incident difficulty picker overlay
   }
 
   bossRushUnlocked() {
@@ -26,6 +29,8 @@ export class LevelSelectScene extends Scene {
   entries() {
     const list = LEVELS.map((l) => ({ level: l }));
     list.splice(1, 0, { level: FARM_LEVEL, farm: true }, { level: NEST_LEVEL, farm: true }); // bonus stages after level 1
+    list.push({ level: SHIBUYA_LEVEL, trio: true }); // the finale, after level 12
+    for (const l of EX_LEVELS) list.push({ level: l, ex: true }); // post-finale EX arc
     if (this.bossRushUnlocked()) list.push({ bossRush: true });
     return list;
   }
@@ -36,35 +41,70 @@ export class LevelSelectScene extends Scene {
     const e = this.entries()[i];
     if (e.bossRush) return true;
     if (e.farm) return !!save.clearedLevels[1];
+    if (e.trio) return !!save.clearedLevels[12];
     return e.level.n === 1 || !!save.clearedLevels[e.level.n - 1];
+  }
+
+  openDifficultyPicker() {
+    const rec = loadSave().clearedLevels[SHIBUYA_LEVEL.n];
+    this.diffMenu = new Menu(TRIO_DIFFICULTIES.map((d) => ({
+      label: d.name,
+      hint: `${d.blurb}${d.xpBonus ? `   +${d.xpBonus} bonus XP` : ''}${rec?.diffs?.[d.id] ? '   CLEARED ✔' : ''}`,
+    })));
   }
 
   update(dt) {
     this.t += dt;
     this.denyT = Math.max(0, this.denyT - dt);
     effects.update(dt);
+    if (this.diffMenu) {
+      const r = this.diffMenu.update(dt);
+      if (r.action === 'back') this.diffMenu = null;
+      else if (r.action === 'confirm') {
+        const tier = TRIO_DIFFICULTIES[r.index];
+        writeSave((s) => { s.lastLevel = SHIBUYA_LEVEL.n; });
+        this.game.changeScene('charSelect', { levelN: SHIBUYA_LEVEL.n, difficulty: tier.id });
+      }
+      return;
+    }
     const entries = this.entries();
+    if (input.mouseIn(BACK_RECT.x, BACK_RECT.y, BACK_RECT.w, BACK_RECT.h)) {
+      input.mouse.hot = true;
+      if (input.clicked()) { this.game.changeScene('title'); return; }
+    }
+    const hov = entries.findIndex((_, i) => {
+      const { x, y } = this.nodePos(i);
+      return input.mouseInCircle(x, y, 26);
+    });
+    if (hov >= 0) {
+      input.mouse.hot = true;
+      if (input.mouse.moved || input.mouse.click) this.cursor = hov;
+      if (input.clicked()) { this.activate(); return; }
+    }
     if (input.pressed('right')) this.cursor = Math.min(entries.length - 1, this.cursor + 1);
     if (input.pressed('left')) this.cursor = Math.max(0, this.cursor - 1);
     if (input.pressed('down')) this.cursor = Math.min(entries.length - 1, this.cursor + NODES_PER_ROW);
     if (input.pressed('up')) this.cursor = Math.max(0, this.cursor - NODES_PER_ROW);
     if (input.pressed('back')) { this.game.changeScene('title'); return; }
-    if (input.pressed('confirm')) {
-      if (!this.isUnlocked(this.cursor)) {
-        this.denyT = 0.3;
-        return;
-      }
-      const e = entries[this.cursor];
-      writeSave((s) => { s.lastLevel = e.bossRush || e.farm ? 1 : e.level.n; });
-      this.game.changeScene('charSelect', e.bossRush ? { bossRush: true } : { levelN: e.level.n });
+    if (input.pressed('confirm')) this.activate();
+  }
+
+  activate() {
+    if (!this.isUnlocked(this.cursor)) {
+      this.denyT = 0.3;
+      return;
     }
+    const e = this.entries()[this.cursor];
+    if (e.trio) { this.openDifficultyPicker(); return; }
+    writeSave((s) => { s.lastLevel = e.bossRush || e.farm ? 1 : e.level.n; });
+    this.game.changeScene('charSelect', e.bossRush ? { bossRush: true } : { levelN: e.level.n });
   }
 
   nodePos(i) {
     const row = Math.floor(i / NODES_PER_ROW);
     const col = i % NODES_PER_ROW;
-    const x = 120 + (row % 2 === 0 ? col : NODES_PER_ROW - 1 - col) * 130;
-    return { x, y: 150 + row * 110 };
+    const x = 110 + (row % 2 === 0 ? col : NODES_PER_ROW - 1 - col) * 102;
+    return { x, y: 150 + row * 88 };
   }
 
   draw(ctx) {
@@ -116,7 +156,7 @@ export class LevelSelectScene extends Scene {
       } else if (!unlocked) {
         drawText(ctx, '🔒', x + shake, y + 6, { size: 16, align: 'center', outline: false });
       } else {
-        drawText(ctx, String(e.level.n), x + shake, y + 6, { size: 18, color: '#fff', align: 'center' });
+        drawText(ctx, String(e.level.n), x + shake, y + 6, { size: 18, color: e.trio ? '#ff3860' : e.ex ? '#ffd166' : '#fff', align: 'center' });
         if (cleared) drawText(ctx, '✔', x + 18, y - 14, { size: 14, color: '#6fe3a0', align: 'center' });
       }
     });
@@ -136,10 +176,21 @@ export class LevelSelectScene extends Scene {
       drawText(ctx, this.isUnlocked(this.cursor) ? 'Enter to harvest (replayable)' : 'Clear level 1 to unlock', 60, 480, {
         size: 12, color: this.isUnlocked(this.cursor) ? '#6fe3a0' : 'rgba(255,255,255,0.5)',
       });
+    } else if (e.trio) {
+      const lvl = e.level;
+      drawText(ctx, `FINALE: ${lvl.name.toUpperCase()}`, 60, 402, { size: 18, color: '#ff3860' });
+      drawText(ctx, lvl.cardLines?.[0] ?? '', 60, 430, { size: 13, color: '#fff' });
+      drawText(ctx, lvl.cardLines?.[1] ?? '', 60, 454, { size: 12, color: '#8be9fd' });
+      const rec = save.clearedLevels[lvl.n];
+      const ticks = TRIO_DIFFICULTIES.map((d) => `${rec?.diffs?.[d.id] ? '✔' : '·'} ${d.name}`).join('   ');
+      drawText(ctx, this.isUnlocked(this.cursor) ? ticks : 'Clear level 12 to unlock', 60, 480, {
+        size: 11.5, color: this.isUnlocked(this.cursor) ? '#6fe3a0' : 'rgba(255,255,255,0.5)',
+      });
+      lvl.bossIds.forEach((id, i) => drawPortrait(ctx, byId[id], 500 + i * 58, 480, 1.1, this.t + i));
     } else {
       const lvl = e.level;
       const boss = byId[lvl.bossId];
-      drawText(ctx, `LEVEL ${lvl.n}: ${lvl.name.toUpperCase()}`, 60, 402, { size: 18, color: '#ffd166' });
+      drawText(ctx, `${e.ex ? 'EX LEVEL' : 'LEVEL'} ${lvl.n}: ${lvl.name.toUpperCase()}`, 60, 402, { size: 18, color: '#ffd166' });
       drawText(ctx, `BOSS: ${boss.name.toUpperCase()}`, 60, 430, { size: 14, color: '#ffb3bb' });
       const cleared = !!save.clearedLevels[lvl.n];
       drawText(ctx, `First clear: ${lvl.xpFirst} XP   Replay: ${lvl.xpReplay} XP`, 60, 454, { size: 12, color: '#8be9fd' });
@@ -148,7 +199,19 @@ export class LevelSelectScene extends Scene {
       });
       drawPortrait(ctx, boss, 590, 480, 1.5, this.t);
     }
-    drawText(ctx, '[Enter] Choose fighter   [Esc] Title', W - 40, H - 16, { size: 12, color: 'rgba(255,255,255,0.6)', align: 'right' });
+    const backHov = input.mouseIn(BACK_RECT.x, BACK_RECT.y, BACK_RECT.w, BACK_RECT.h);
+    drawText(ctx, '⬅ TITLE', 40, H - 14, { size: 15, color: backHov ? '#ffd166' : 'rgba(255,255,255,0.75)' });
+    drawText(ctx, 'Click a level or [Enter] Choose fighter   [Esc] Title', W - 40, H - 16, { size: 12, color: 'rgba(255,255,255,0.6)', align: 'right' });
+
+    if (this.diffMenu) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      panel(ctx, W / 2 - 280, 110, 560, 320);
+      drawText(ctx, 'THE SHIBUYA INCIDENT', W / 2, 150, { size: 24, color: '#ff3860', align: 'center' });
+      drawText(ctx, 'HOW STRONG ARE THEY TONIGHT?', W / 2, 178, { size: 12, color: 'rgba(255,255,255,0.7)', align: 'center' });
+      this.diffMenu.draw(ctx, W / 2, 224, { align: 'center', spacing: 36, size: 19 });
+      drawText(ctx, '[Enter] Confirm   [Esc] Back', W / 2, 452, { size: 12, color: 'rgba(255,255,255,0.6)', align: 'center' });
+    }
     effects.drawScreen(ctx);
   }
 }

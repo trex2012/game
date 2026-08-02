@@ -4,7 +4,7 @@ import { effects } from '../engine/effects.js';
 
 export default {
   id: 'yuji',
-  name: 'Yuji Itadori',
+  name: 'Itadorable',
   series: 'JJK',
   unlockLevel: 1,
   stats: { maxHp: 130, speed: 320, jumpVel: jumpVelForHeight(170, GRAVITY), weight: 'medium' },
@@ -46,6 +46,17 @@ export default {
     },
   },
 
+  tech: {
+    name: 'Adrenaline Guard',
+    cost: 15,
+    cooldown: 6,
+    desc: 'Brace for 1.5s: take half damage, and hits taken feed your meter.',
+    onUse(ctx) {
+      ctx.f.mem.guardT = 1.5;
+      effects.ring(ctx.f.cx, ctx.f.cy, '#e8836f', 44, 0.3);
+    },
+  },
+
   ultra: {
     name: 'Manji Kick',
     cost: 20,
@@ -63,6 +74,14 @@ export default {
   hooks: {
     onUpdate(ctx, dt) {
       ctx.f.mem.bfT = Math.max(0, (ctx.f.mem.bfT ?? 0) - dt);
+      ctx.f.mem.guardT = Math.max(0, (ctx.f.mem.guardT ?? 0) - dt);
+    },
+    onIncomingHit(ctx, hit) {
+      if ((ctx.f.mem.guardT ?? 0) > 0) {
+        hit.damage *= 0.5;
+        ctx.f.gainEnergy(10, 'taken');
+      }
+      return true;
     },
     onDealHit(ctx, target, hit) {
       if (hit.tag === 'basic') {

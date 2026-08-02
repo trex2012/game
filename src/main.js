@@ -11,8 +11,9 @@ import { LevelScene } from './scenes/levelScene.js';
 import { VictoryScene } from './scenes/victoryScene.js';
 import { DefeatScene } from './scenes/defeatScene.js';
 
-const { ctx } = createCanvas();
+const { canvas, ctx } = createCanvas();
 input.attach(window);
+input.attachMouse(canvas);
 initTouch(); // shows on-screen controls on phones/tablets (?touch=1 to force)
 window.addEventListener('keydown', () => audio.ensure(), { passive: true });
 window.addEventListener('pointerdown', () => audio.ensure(), { passive: true });
@@ -26,9 +27,16 @@ game.register('victory', new VictoryScene());
 game.register('defeat', new DefeatScene());
 
 // Debug shortcut: ?scene=level&n=3&char=gojo jumps straight into a level.
+// The trio finale takes a tier too: ?scene=level&n=13&char=gojo&diff=calamity
+// Add &fromBoss=1 to skip the approach and start at the boss arena.
 const params = new URLSearchParams(location.search);
 if (params.get('scene') === 'level') {
-  game.changeScene('level', { levelN: +(params.get('n') ?? 1), charId: params.get('char') ?? 'deku' });
+  game.changeScene('level', {
+    levelN: +(params.get('n') ?? 1),
+    charId: params.get('char') ?? 'deku',
+    difficulty: params.get('diff') ?? undefined,
+    fromBoss: params.get('fromBoss') === '1',
+  });
 } else {
   game.changeScene('title');
 }

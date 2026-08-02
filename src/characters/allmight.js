@@ -4,7 +4,7 @@ import { effects } from '../engine/effects.js';
 
 export default {
   id: 'allmight',
-  name: 'All Might',
+  name: 'Almighty Grin',
   series: 'MHA',
   unlockLevel: 10,
   stats: { maxHp: 180, speed: 270, jumpVel: jumpVelForHeight(175, GRAVITY), weight: 'heavy' },
@@ -50,6 +50,19 @@ export default {
       f.invuln = Math.max(f.invuln, 0.5);
       f.mem.usos = true;
       f.mem.usosGrace = 0.15; // don't detonate on the launch frame
+    },
+  },
+
+  tech: {
+    name: 'Gale Backhand',
+    cost: 15,
+    cooldown: 5,
+    desc: 'A sweeping backhand on both sides — pure crowd control.',
+    onUse(ctx) {
+      const f = ctx.f;
+      ctx.melee({ damage: 10, w: 200, h: 90, centered: true, life: 0.12, kx: 460, ky: 220, hitstun: 0.35, tag: 'super' });
+      effects.slash(f.cx - 90, f.cy - 10, f.cx + 90, f.cy - 10, '#fff8dc');
+      effects.ring(f.cx, f.cy, '#f6d34a', 90, 0.3);
     },
   },
 

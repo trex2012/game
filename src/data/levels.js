@@ -224,6 +224,102 @@ export const LEVELS = [
   }),
 ];
 
+// The EX arc — six extra boss levels starring the newer roster fighters,
+// unlocked by clearing the Shibuya Incident (level 13). Chains 14 -> 19.
+export const EX_LEVELS = [
+  makeLevel({
+    n: 14,
+    name: 'Sports Festival Stadium',
+    bossId: 'bakugo',
+    width: 3400,
+    theme: { skyTop: '#7ab0e8', skyBottom: '#e8d8b0', far: '#8a9ab0', near: '#5a6a80', ground: '#8a7a5c', accent: '#e8762a', particle: null },
+    solids: [ground(0, 1400), ground(1460, 800), ground(2320, 1080), block(600, 430, 160, 70), block(1700, 420, 140, 80), block(2600, 430, 160, 70)],
+    oneWays: [plat(900, 390, 160), plat(1500, 340, 140), plat(2100, 380, 160), plat(2850, 340, 140)],
+    waves: [
+      wave(350, [s('secbot', 650, 468), s('secbot', 750, 358)]),
+      wave(1100, [s('secbot', 1500, 468), s('brute', 1600, 448), s('crawler', 1550, 470)]),
+      wave(2000, [s('secbot', 2400, 468), s('secbot', 2500, 358), s('brute', 2650, 448)]),
+    ],
+  }),
+  makeLevel({
+    n: 15,
+    name: 'Straw Doll Alley',
+    bossId: 'nobara',
+    width: 3600,
+    theme: { skyTop: '#2a1626', skyBottom: '#583048', far: '#40223a', near: '#281424', ground: '#4a3040', accent: '#c0392b', particle: 'petal' },
+    solids: [ground(0, 1200), ground(1260, 700, 460), ground(2020, 700), ground(2780, 820), block(700, 420, 120, 80), block(1600, 400, 100, 60), block(2400, 430, 140, 70)],
+    oneWays: [plat(950, 380, 140), plat(1350, 320, 140), plat(2150, 380, 160), plat(2900, 360, 160)],
+    hazards: [spikes(1220, 40), spikes(2740, 40)],
+    waves: [
+      wave(300, [s('wisp', 620, 360), s('crawler', 700, 470), s('spitter', 800, 474)]),
+      wave(1300, [s('crawler', 1600, 340), s('wisp', 1700, 320), s('diver', 1750, 170)]),
+      wave(2300, [s('spitter', 2600, 474), s('crawler', 2700, 470), s('wisp', 2800, 330), s('diver', 2850, 160)]),
+    ],
+  }),
+  makeLevel({
+    n: 16,
+    name: 'Frozen Training Camp',
+    bossId: 'todoroki',
+    width: 3600,
+    theme: { skyTop: '#1a2a48', skyBottom: '#7aa8d0', far: '#4a6a92', near: '#2c4260', ground: '#b8d4e8', accent: '#bfe8ff', particle: 'ash' },
+    solids: [ground(0, 1100), ground(1160, 600, 440), ground(1820, 700), ground(2580, 1020), block(600, 430, 140, 70), block(1500, 380, 100, 60), block(2200, 420, 120, 80)],
+    oneWays: [plat(900, 380, 140), plat(1300, 320, 140, true), plat(2000, 380, 160), plat(2700, 340, 160), plat(3000, 400, 140)],
+    hazards: [spikes(1120, 40), spikes(2540, 40)],
+    waves: [
+      wave(300, [s('wisp', 650, 360), s('crawler', 750, 470)]),
+      wave(1200, [s('brute', 1500, 388), s('wisp', 1600, 300), s('crawler', 1650, 410)]),
+      wave(2200, [s('diver', 2500, 170), s('wisp', 2600, 320), s('brute', 2750, 448)]),
+    ],
+  }),
+  makeLevel({
+    n: 17,
+    name: 'Overtime District',
+    bossId: 'nanami',
+    width: 3800,
+    theme: { skyTop: '#28242e', skyBottom: '#6a5a48', far: '#48403c', near: '#2c2624', ground: '#3e3834', accent: '#ffd166', particle: null },
+    solids: [ground(0, 1500), ground(1560, 700, 450), ground(2320, 1480), block(500, 420, 140, 80), block(1200, 400, 120, 100), block(2000, 380, 100, 70), block(2700, 420, 160, 80), block(3200, 400, 120, 100)],
+    oneWays: [plat(800, 370, 150), plat(1650, 350, 150), plat(2500, 370, 150), plat(2950, 330, 140)],
+    waves: [
+      wave(300, [s('secbot', 700, 468), s('secbot', 800, 348)]),
+      wave(1300, [s('secbot', 1700, 458), s('brute', 1800, 398), s('diver', 1900, 170)]),
+      wave(2400, [s('secbot', 2800, 468), s('secbot', 2900, 348), s('brute', 3050, 448), s('diver', 3100, 160)]),
+    ],
+  }),
+  makeLevel({
+    n: 18,
+    name: 'Sky Terrace',
+    bossId: 'hawks',
+    width: 4000,
+    theme: { skyTop: '#e86a3a', skyBottom: '#f5c88a', far: '#b06a48', near: '#7a4630', ground: '#5c4a48', accent: '#c03028', particle: null },
+    solids: [
+      ground(0, 700, 470), ground(800, 560, 430), ground(1460, 520, 460), ground(2080, 560, 420),
+      ground(2740, 500, 460), ground(3340, 660, 440),
+    ],
+    oneWays: [plat(720, 400, 80), plat(1380, 390, 80), plat(2000, 380, 80), plat(2660, 390, 80), plat(3260, 400, 80)],
+    waves: [
+      wave(300, [s('diver', 700, 180), s('diver', 900, 150)]),
+      wave(1400, [s('diver', 1800, 160), s('secbot', 1700, 428), s('diver', 2000, 140)]),
+      wave(2500, [s('diver', 2900, 150), s('diver', 3000, 180), s('brute', 3100, 408)]),
+    ],
+  }),
+  makeLevel({
+    n: 19,
+    name: 'Jujutsu High, After Dark',
+    bossId: 'yuta',
+    width: 4200,
+    arenaW: 1300,
+    theme: { skyTop: '#0c0a1c', skyBottom: '#2c1a44', far: '#3a2456', near: '#180f28', ground: '#302846', accent: '#f06a9a', particle: 'petal' },
+    solids: [ground(0, 1700), ground(1800, 800), ground(2660, 1540), block(600, 420, 140, 80), block(1300, 400, 120, 100), block(2200, 420, 140, 80)],
+    oneWays: [plat(900, 380, 140), plat(1550, 340, 140), plat(2400, 360, 140), plat(2900, 320, 140)],
+    hazards: [spikes(1700, 100)],
+    waves: [
+      wave(300, [s('wisp', 650, 340), s('crawler', 750, 470), s('spitter', 850, 474)], true),
+      wave(1300, [s('boss:maki', 1600, 446), s('wisp', 1500, 320)], true),
+      wave(2300, [s('brute', 2600, 448), s('diver', 2700, 160), s('crawler', 2750, 470), s('spitter', 2800, 474)], true),
+    ],
+  }),
+];
+
 // Bonus farm stage — no boss, just crowds of humans and lesser curses so Geto
 // and Mahito can stock up. Reach the exit gate to bank everything you stored.
 export const FARM_LEVEL = {
@@ -271,9 +367,39 @@ export const NEST_LEVEL = {
   xpFirst: 60,
   xpReplay: 20,
   domainChargeMult: 3,
-  cardLines: ['Wall-to-wall cursed spirits — no humans, no boss.', 'Cursed energy is thick here: domain gauge charges 3× faster. Feast, Geto.'],
+  cardLines: ['Wall-to-wall cursed spirits — no humans, no boss.', 'Cursed energy is thick here: domain gauge charges 3× faster. Feast, Geeto.'],
 };
 
-FARM_LEVEL.cardLines = ['No boss — a street full of people and lesser curses.', 'Stock up Geto & Mahito, then reach the glowing gate to bank it all.'];
+FARM_LEVEL.cardLines = ['No boss — a street full of people and lesser curses.', 'Stock up Geeto & Patchface, then reach the glowing gate to bank it all.'];
 
-export const levelByN = Object.fromEntries([...LEVELS, FARM_LEVEL, NEST_LEVEL].map((l) => [l.n, l]));
+// The finale — the Shibuya Incident. No single boss: Geto, Mahito and Choso all
+// descend on the arena at once, at a player-chosen difficulty tier.
+export const SHIBUYA_LEVEL = makeLevel({
+  n: 13,
+  name: 'The Shibuya Incident',
+  bossId: null,
+  trio: true,
+  bossIds: ['geto', 'mahito', 'choso'],
+  width: 3400,
+  arenaW: 1500,
+  civilians: 20,
+  checkpointX: 1650,
+  theme: { skyTop: '#0a0614', skyBottom: '#2a1030', far: '#38183f', near: '#170a20', ground: '#2e2436', accent: '#ff3860', particle: 'ember' },
+  solids: [
+    ground(0, 1250), ground(1310, 560), ground(1930, 1470),
+    block(640, 430, 130, 70), block(1480, 410, 110, 90),
+  ],
+  oneWays: [
+    plat(900, 380, 160), plat(1330, 330, 140),
+    plat(2150, 390, 170), plat(2560, 320, 180), plat(2970, 390, 170),
+  ],
+  hazards: [spikes(1210, 40), spikes(1890, 40)],
+  waves: [
+    wave(300, [s('wisp', 620, 360), s('crawler', 700, 470), s('spitter', 950, 354)]),
+    wave(1000, [s('brute', 1450, 448), s('wisp', 1380, 300), s('diver', 1500, 170)], true),
+    wave(1450, [s('secbot', 1700, 468), s('spitter', 1620, 474), s('crawler', 1750, 470), s('diver', 1680, 160)], true),
+  ],
+});
+SHIBUYA_LEVEL.cardLines = ['Geeto, Patchface & Choco attack together — three bosses, one arena.', 'Pick how strong they are tonight. Harder tiers pay bonus XP.'];
+
+export const levelByN = Object.fromEntries([...LEVELS, ...EX_LEVELS, FARM_LEVEL, NEST_LEVEL, SHIBUYA_LEVEL].map((l) => [l.n, l]));

@@ -70,10 +70,15 @@ for (const def of ROSTER) {
     prep(p);
     const usedSuper = p.trySuper();
     step(w, 1.5);
-    // every character now has an H ultra — fire it too
+    // every character now has an H ultra and an I tech — fire both
     p.energy = 100;
     prep(p);
     p.tryUltra();
+    step(w, 1.5);
+    p.energy = 100;
+    prep(p);
+    const usedTech = p.tryTech();
+    if (!usedTech) throw new Error(`${def.id} tech failed to fire`);
     step(w, 1.5);
     let domainOk = true;
     if (def.domain) {
@@ -452,14 +457,209 @@ console.log('— Curse Nest: 3x domain charge —');
   ok(Math.abs(p.domainCharge - 30) < 1, `domain gauge charges 3x in the Nest (${p.domainCharge.toFixed(1)} from 20 dmg, normally 10)`);
 }
 
+console.log('— Shibuya Incident: trio finale + difficulty tiers —');
+{
+  const { levelByN, SHIBUYA_LEVEL } = await import(`${base}/data/levels.js`);
+  const { TRIO_DIFFICULTIES, trioDifficultyById } = await import(`${base}/data/progression.js`);
+  const lvl = levelByN[13];
+  ok(lvl === SHIBUYA_LEVEL && lvl.trio === true, 'level 13 is the trio finale');
+  ok(lvl.bossIds?.length === 3 && lvl.bossIds.every((id) => !!byId[id]), `all three bosses exist (${lvl.bossIds?.join(', ')})`);
+  ok(TRIO_DIFFICULTIES.length === 4 && TRIO_DIFFICULTIES.every((d) => trioDifficultyById[d.id] === d), '4 selectable difficulty tiers');
+  for (let i = 1; i < TRIO_DIFFICULTIES.length; i++) {
+    const a = TRIO_DIFFICULTIES[i - 1], b = TRIO_DIFFICULTIES[i];
+    ok(b.ai.hpMult > a.ai.hpMult && b.ai.dmgMult > a.ai.dmgMult && b.ai.reactionDelay < a.ai.reactionDelay
+      && b.xpBonus >= a.xpBonus, `${b.id} is strictly harder than ${a.id} (and pays >= XP)`);
+  }
+
+  // headless trio fight: all three bosses at once against one player
+  const level = { ...lvl, solids: lvl.solids.map((sd) => ({ ...sd })), oneWays: lvl.oneWays.map((pl) => ({ ...pl })), groundY: null };
+  const w = new World(level, null);
+  const p = new PlayerFighter(byId.gojo, lvl.arena.x + 100, 300);
+  w.addFighter(p);
+  const tier = trioDifficultyById.grade1;
+  w.bosses = lvl.bossIds.map((id, i) => w.addFighter(new AIFighter(byId[id], lvl.arena.x + 400 + i * 300, 300, 'enemy', {
+    brain: 'boss', difficulty: tier.ai, hpMult: tier.ai.hpMult, isBoss: true, aggroed: true,
+  })));
+  ok(w.bosses.every((b) => b.maxHp === Math.round(b.stats.maxHp * tier.ai.hpMult)), 'tier hpMult applies to each boss');
+  step(w, 4);
+  ok(w.bosses.some((b) => b.alive), 'trio fight simulates without crashing');
+  for (const b of w.bosses) {
+    if (!b.alive) continue;
+    b.invuln = 0;
+    b.receiveHit({ damage: 99999, kx: 0, ky: 0, hitstun: 0, isMelee: false, tag: 'super' }, p, w);
+  }
+  step(w, 0.5);
+  ok(w.bosses.every((b) => !b.alive), 'all three bosses can be defeated');
+  ok(w.bosses.every((b) => w.fighters.includes(b)), 'downed trio bosses stay tracked for the HUD');
+}
+
+console.log('— Nailbara: nails embed on hit, Hairpin detonates them —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.nobara, 200, 300);
+  w.addFighter(p);
+  const dummy = new AIFighter(MINIONS.brute, 340, 250, 'enemy', { brain: 'minion' });
+  dummy.control = () => {}; dummy.setState = () => {};
+  w.addFighter(dummy);
+  step(w, 0.5);
+  p.facing = 1;
+  for (let i = 0; i < 3; i++) { prep(p); p.cooldowns.basic = 0; p.tryBasic(); step(w, 0.5); }
+  ok((dummy.mem.nails ?? 0) >= 3, `nails embed on hit (${dummy.mem.nails ?? 0})`);
+  const hpBefore = dummy.hp;
+  prep(p); p.energy = 100;
+  p.trySuper();
+  step(w, 0.3);
+  ok((dummy.mem.nails ?? 0) === 0, 'Hairpin consumes the embedded nails');
+  ok(hpBefore - dummy.hp >= 24, `detonation scales with nail count (${hpBefore - dummy.hp} dmg)`);
+}
+
+console.log('— Salaryman: 7:3 weak point every 3rd hit, Overtime buffs then resets —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.nanami, 200, 300);
+  w.addFighter(p);
+  const dummy = new AIFighter(MINIONS.brute, 240, 250, 'enemy', { brain: 'minion' });
+  dummy.control = () => {}; dummy.setState = () => {};
+  w.addFighter(dummy);
+  step(w, 0.5);
+  p.facing = 1;
+  let third = 0;
+  for (let i = 0; i < 3; i++) {
+    dummy.x = p.x + 40; dummy.vx = 0; dummy.invuln = 0; // shed post-hit i-frames between swings
+    prep(p); p.cooldowns.basic = 0;
+    const before = dummy.hp;
+    p.tryBasic(); step(w, 0.25);
+    if (i === 2) third = before - dummy.hp;
+  }
+  ok(third >= 14, `3rd hit lands the 7:3 weak-point bonus (${third} dmg)`);
+  const base = p.dmgMult;
+  p.energy = 100; prep(p);
+  p.tryUltra();
+  ok(p.dmgMult > base, 'Overtime raises damage');
+  step(w, 7);
+  ok(Math.abs(p.dmgMult - base) < 1e-9, 'Overtime expires and damage resets');
+}
+
+console.log('— Icyhot: Glacier Wave freezes, fire moves burn and thaw his frost —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.todoroki, 200, 300);
+  w.addFighter(p);
+  const dummy = new AIFighter(MINIONS.brute, 300, 250, 'enemy', { brain: 'minion' });
+  dummy.control = () => {}; dummy.setState = () => {};
+  w.addFighter(dummy);
+  step(w, 0.5);
+  prep(p); p.facing = 1; p.energy = 100;
+  p.trySuper();
+  step(w, 0.8);
+  ok(!!dummy.statuses.frozen || !dummy.alive, 'Glacier Wave freezes the target');
+  delete dummy.statuses.frozen;
+  dummy.gravityOff = false;
+  dummy.x = p.x + 50; dummy.vx = 0;
+  p.mem.frost = 5;
+  prep(p); p.energy = 100;
+  p.tryUltra();
+  step(w, 1);
+  ok(!!dummy.statuses.burn, 'Jet Burn sets burn');
+  ok(p.mem.frost === 0, 'fire move thaws his frost');
+}
+
+console.log('— Icyhot: low Ice Shard clips crawlers, I raises a freezing Ice Wall —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.todoroki, 200, 300);
+  w.addFighter(p);
+  step(w, 0.5);
+  const c = new AIFighter(MINIONS.crawler, p.cx + 150, 460, 'enemy', { brain: 'minion' });
+  c.control = () => {};
+  w.addFighter(c);
+  step(w, 0.3);
+  prep(p); p.facing = 1; p.cooldowns.basic = 0;
+  p.tryBasic();
+  step(w, 0.5);
+  ok(c.hp < c.maxHp, 'Ice Shard no longer sails over a crawler');
+  // I — jagged ice wall: solid terrain, hurts + freezes on touch, expires
+  const solidsBefore = w.level.solids.length;
+  prep(p); p.energy = 100;
+  const usedWall = p.tryTech();
+  step(w, 0.2);
+  const wall = w.fighters.find((e) => e.alive && e.def.id === 'ice-wall');
+  ok(usedWall && !!wall, 'Ice Wall raised');
+  ok(w.level.solids.length === solidsBefore + 1, 'wall registers as solid terrain');
+  const brute = new AIFighter(MINIONS.brute, wall.x + wall.w + 1, wall.y + 20, 'enemy', { brain: 'minion' });
+  brute.control = () => {};
+  w.addFighter(brute);
+  step(w, 0.4);
+  ok(brute.hp < brute.maxHp, `spikes hurt on touch (${brute.maxHp - brute.hp} dmg, more than his basic 6)`);
+  ok(!!brute.statuses.frozen, 'touching the wall freezes in place');
+  step(w, 8);
+  ok(!w.fighters.find((e) => e.alive && e.def.id === 'ice-wall'), 'wall expires on its own');
+  ok(w.level.solids.length === solidsBefore, 'expired wall stops blocking');
+}
+
+console.log('— Blasty: Blast Palm reaches farther —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.bakugo, 200, 300);
+  w.addFighter(p);
+  const c = new AIFighter(MINIONS.crawler, p.x + 90, 300, 'enemy', { brain: 'minion' });
+  c.control = () => {};
+  w.addFighter(c);
+  step(w, 0.3);
+  prep(p); p.facing = 1; p.cooldowns.basic = 0;
+  p.tryBasic();
+  step(w, 0.2);
+  ok(c.hp < c.maxHp, 'long Blast Palm connects at a range the old one whiffed');
+}
+
+console.log('— Blasty: Howitzer Impact detonates with burn —');
+{
+  const w = makeWorld();
+  const p = new PlayerFighter(byId.bakugo, 200, 300);
+  w.addFighter(p);
+  const dummy = new AIFighter(MINIONS.brute, 400, 250, 'enemy', { brain: 'minion' });
+  dummy.control = () => {}; dummy.setState = () => {};
+  w.addFighter(dummy);
+  step(w, 0.5);
+  prep(p); p.facing = 1; p.energy = 100;
+  p.trySuper();
+  step(w, 1.2);
+  ok(!!dummy.statuses.burn || !dummy.alive, 'Howitzer Impact lands its burning blast');
+}
+
 console.log('— progression math —');
 {
-  ok(levelForXp(0) === 1 && levelForXp(100) === 2 && levelForXp(5200) === 14, 'XP thresholds map to levels');
+  ok(levelForXp(0) === 1 && levelForXp(100) === 2 && levelForXp(5200) === 14 && levelForXp(6600) === 16, 'XP thresholds map to levels');
   ok(THRESHOLDS[2] - THRESHOLDS[1] === 100, 'level 1->2 costs exactly level-1 first-clear XP');
   const d1 = difficultyFor(1), d12 = difficultyFor(12);
   ok(d1.hpMult === 1 && d12.hpMult === 2.4 && d12.reactionDelay < d1.reactionDelay, 'difficulty ramps 1 -> 12');
   ok(LEVELS.length === 12, '12 campaign levels defined');
   for (const l of LEVELS) ok(!!byId[l.bossId], `level ${l.n} boss '${l.bossId}' exists`);
+}
+
+console.log('— EX arc: the newer fighters are bosses too —');
+{
+  const { EX_LEVELS, levelByN } = await import(`${base}/data/levels.js`);
+  ok(EX_LEVELS.length === 6, '6 EX levels defined');
+  ok(EX_LEVELS.map((l) => l.n).join(',') === '14,15,16,17,18,19', 'EX levels chain 14 -> 19 (14 unlocks off the Shibuya clear)');
+  const exBosses = EX_LEVELS.map((l) => l.bossId);
+  ok(exBosses.join(',') === 'bakugo,nobara,todoroki,nanami,hawks,yuta', `every newer fighter has a boss level (${exBosses.join(', ')})`);
+  for (const l of EX_LEVELS) {
+    ok(!!byId[l.bossId] && levelByN[l.n] === l, `EX level ${l.n} boss '${l.bossId}' exists`);
+  }
+  ok(difficultyFor(19).hpMult === 3.0 && difficultyFor(14).hpMult > difficultyFor(12).hpMult, 'EX difficulty keeps ramping past the campaign');
+  // headless EX boss fight: Yoots with Rika versus a player
+  const lvl = EX_LEVELS[5];
+  const level = { ...lvl, solids: lvl.solids.map((sd) => ({ ...sd })), oneWays: lvl.oneWays.map((pl) => ({ ...pl })), groundY: null };
+  const w = new World(level, null);
+  const p = new PlayerFighter(byId.gojo, lvl.arena.x + 100, 300);
+  w.addFighter(p);
+  const boss = new AIFighter(byId.yuta, lvl.arena.x + 500, 300, 'enemy', {
+    brain: 'boss', difficulty: difficultyFor(19), hpMult: difficultyFor(19).hpMult, isBoss: true, aggroed: true,
+  });
+  w.addFighter(boss);
+  step(w, 4);
+  ok(boss.alive !== undefined && w.fighters.includes(boss), 'EX boss fight simulates without crashing');
 }
 
 console.log(failures === 0 ? '\nALL SMOKE TESTS PASSED' : `\n${failures} FAILURES`);
