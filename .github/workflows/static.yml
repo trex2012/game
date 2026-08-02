@@ -28,6 +28,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      # The repo's Pages source was "Deploy from a branch", which also runs
+      # GitHub's built-in "pages build and deployment" on every push and races
+      # this workflow with a raw-repo deploy. Force Actions-only deploys.
+      - name: Force Pages source to GitHub Actions
+        run: |
+          curl -sf -X PUT \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" \
+            -d '{"build_type":"workflow"}' \
+          || echo "::warning::Could not switch Pages source — set Settings > Pages > Source to 'GitHub Actions' manually"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Node
